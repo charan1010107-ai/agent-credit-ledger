@@ -129,8 +129,8 @@ function PassportPage() {
             />
             <Field label="Jurisdiction" value={a.principals?.jurisdiction ?? "—"} />
             <Field label="Declared task scope" value={a.task_scope} />
-            <Field label="Spend cap / cycle" value={`$${money(a.spend_cap)}`} mono />
-            <Field label="Credit limit" value={`$${money(a.credit_limit)}`} mono />
+            <Field label="Spend cap / cycle" value={`₹₹{money(a.spend_cap)}`} mono />
+            <Field label="Credit limit" value={`₹₹{money(a.credit_limit)}`} mono />
             <Field
               label="Vendor whitelist"
               value={
@@ -156,7 +156,7 @@ function PassportPage() {
                 { l: "Task success", v: `${a.task_success_rate}%`, c: "text-success" },
                 { l: "Avg completion", v: `${a.avg_completion_minutes}m`, c: "text-cyan" },
                 { l: "Spend consistency", v: `${a.spend_consistency}`, c: "text-violet" },
-                { l: "Wallet balance", v: `$${money(a.wallet_balance)}`, c: "text-primary" },
+                { l: "Wallet balance", v: `₹₹{money(a.wallet_balance)}`, c: "text-primary" },
               ].map((s) => (
                 <div key={s.l} className="rounded-lg border border-border/60 bg-secondary/30 p-3">
                   <div className="text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
@@ -262,8 +262,8 @@ function PassportPage() {
                     <div>
                       <div className="text-sm font-medium">{l.task_description}</div>
                       <div className="num mt-1 text-[11px] text-muted-foreground">
-                        ${money(Number(l.amount))} @ {Number(l.interest_rate).toFixed(2)}% · exp. rev
-                        ${money(Number(l.expected_revenue))}
+                        ₹{money(Number(l.amount))} @ {Number(l.interest_rate).toFixed(2)}% · exp. rev
+                        ₹{money(Number(l.expected_revenue))}
                       </div>
                     </div>
                     <StatusPill label={t.label} className={t.className} />

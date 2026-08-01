@@ -156,7 +156,7 @@ function LoanDesk() {
                 <option value="">Select an agent…</option>
                 {list.map((a) => (
                   <option key={a.id} value={a.id}>
-                    {a.name} — score {a.credit_score} — limit ${money(a.credit_limit)}
+                    {a.name} — score {a.credit_score} — limit ₹{money(a.credit_limit)}
                     {a.status === "frozen" ? " (frozen)" : ""}
                   </option>
                 ))}
@@ -326,7 +326,7 @@ function LoanDesk() {
                 <div className="rounded-md border border-border/60 bg-secondary/25 py-2">
                   <div className="text-[10px] text-muted-foreground">DUE AT MATURITY</div>
                   <div className="text-violet">
-                    ${money(Math.round(amount * (1 + decision.rate / 100)))}
+                    ₹{money(Math.round(amount * (1 + decision.rate / 100)))}
                   </div>
                 </div>
               </div>
@@ -371,7 +371,7 @@ function LoanDesk() {
                   >
                     {disburse.isPending
                       ? "Disbursing…"
-                      : `Disburse $${money(amount)} to scoped wallet`}
+                      : `Disburse ₹₹{money(amount)} to scoped wallet`}
                   </button>
                 </div>
               )}
