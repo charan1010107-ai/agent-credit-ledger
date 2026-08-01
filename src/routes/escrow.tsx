@@ -128,7 +128,7 @@ function EscrowPage() {
     onSuccess: (s) => {
       setSettlement(s);
       setSelected("");
-      toast.success(`${s.agentName} settled — ₹₹{money(s.repayment)} routed to escrow`);
+      toast.success(`${s.agentName} settled — ₹${money(s.repayment)} routed to escrow`);
       qc.invalidateQueries();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -165,7 +165,7 @@ function EscrowPage() {
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">{l.task_description}</p>
                 <p className="num mt-1.5 text-[11px] text-muted-foreground">
-                  ₹{money(Number(l.amount))} @ {Number(l.interest_rate).toFixed(2)}% → exp. 
+                  ₹{money(Number(l.amount))} @ {Number(l.interest_rate).toFixed(2)}% → exp. ₹
                   {money(Number(l.expected_revenue))}
                 </p>
               </button>

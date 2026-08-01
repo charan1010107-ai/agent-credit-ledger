@@ -371,7 +371,7 @@ function LoanDesk() {
                   >
                     {disburse.isPending
                       ? "Disbursing…"
-                      : `Disburse ₹₹{money(amount)} to scoped wallet`}
+                      : `Disburse ₹${money(amount)} to scoped wallet`}
                   </button>
                 </div>
               )}
