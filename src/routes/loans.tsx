@@ -51,7 +51,7 @@ function LoanDesk() {
   const [agentId, setAgentId] = useState("");
   const [task, setTask] = useState(TASK_PRESETS[0]!);
   const [amount, setAmount] = useState(400000);
-  const [revenue, setRevenue] = useState(8000);
+  const [revenue, setRevenue] = useState(560000);
   const [dueDate, setDueDate] = useState(
     new Date(Date.now() + 12 * 864e5).toISOString().slice(0, 10),
   );
