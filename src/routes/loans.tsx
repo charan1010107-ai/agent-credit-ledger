@@ -3,16 +3,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CheckCircle2, Loader2, Lock, XCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import {
-  fetchAgents,
-  money,
-  scoreColor,
-  txHash,
-  underwrite,
-  type Agent,
-} from "@/lib/agentline";
+import { disburseLoanFn } from "@/lib/agentline.functions";
+import { fetchAgents, money, scoreColor, underwrite, type Agent } from "@/lib/agentline";
 import { Panel } from "@/components/ui-kit";
+
 
 export const Route = createFileRoute("/loans")({
   head: () => ({
@@ -75,52 +69,16 @@ function LoanDesk() {
   const disburse = useMutation({
     mutationFn: async () => {
       if (!agent || !decision) throw new Error("No decision");
-      const hash = txHash();
-      const { data: loan, error } = await supabase
-        .from("loans")
-        .insert({
-          agent_id: agent.id,
+      // Underwriting + all ledger writes are re-run and enforced server-side.
+      return disburseLoanFn({
+        data: {
+          agentId: agent.id,
           amount,
-          interest_rate: decision.rate,
-          task_description: task,
-          expected_revenue: revenue,
-          expected_repayment_date: dueDate,
-          status: "active",
-          decision_reasons: decision.topFactors.map(
-            (f) => `${f.value >= 0 ? "+" : ""}${f.value} ${f.label.toLowerCase()}`,
-          ),
-          disbursed_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-      if (error) throw error;
-
-      const { error: txError } = await supabase.from("transactions").insert({
-        agent_id: agent.id,
-        loan_id: loan.id,
-        tx_hash: hash,
-        tx_type: "disbursement",
-        amount,
-        status: "confirmed",
-        memo: `Scoped wallet funded — whitelist: ${agent.vendor_whitelist.join(", ")}`,
+          expectedRevenue: revenue,
+          taskDescription: task,
+          dueDate,
+        },
       });
-      if (txError) throw txError;
-
-      const { error: agentError } = await supabase
-        .from("agents")
-        .update({
-          status: "active",
-          wallet_balance: Number(agent.wallet_balance) + amount,
-          credit_score: decision.projected,
-        })
-        .eq("id", agent.id);
-      if (agentError) throw agentError;
-
-      await supabase
-        .from("score_history")
-        .insert({ agent_id: agent.id, score: decision.projected });
-
-      return { id: loan.id as string, hash };
     },
     onSuccess: (res) => {
       setDisbursed(res);
@@ -129,6 +87,7 @@ function LoanDesk() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   return (
     <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6">
