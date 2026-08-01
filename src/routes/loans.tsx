@@ -50,7 +50,7 @@ function LoanDesk() {
 
   const [agentId, setAgentId] = useState("");
   const [task, setTask] = useState(TASK_PRESETS[0]!);
-  const [amount, setAmount] = useState(5000);
+  const [amount, setAmount] = useState(400000);
   const [revenue, setRevenue] = useState(8000);
   const [dueDate, setDueDate] = useState(
     new Date(Date.now() + 12 * 864e5).toISOString().slice(0, 10),
@@ -188,8 +188,8 @@ function LoanDesk() {
                 <input
                   type="number"
                   value={amount}
-                  min={100}
-                  step={100}
+                  min={1000}
+                  step={1000}
                   onChange={(e) => setAmount(Number(e.target.value))}
                   className="num mt-1.5 w-full rounded-md border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary"
                 />
@@ -202,7 +202,7 @@ function LoanDesk() {
                   type="number"
                   value={revenue}
                   min={0}
-                  step={100}
+                  step={1000}
                   onChange={(e) => setRevenue(Number(e.target.value))}
                   className="num mt-1.5 w-full rounded-md border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary"
                 />

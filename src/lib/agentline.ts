@@ -169,7 +169,7 @@ export function statusTone(status: string): { label: string; className: string }
 }
 
 export function money(n: number, digits = 0): string {
-  return n.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  return n.toLocaleString("en-IN", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
 export function shortHash(h: string): string {

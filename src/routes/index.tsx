@@ -170,14 +170,14 @@ function Dashboard() {
           <Metric
             label="Capital deployed"
             value={money(deployed)}
-            prefix="$"
+            prefix="₹"
             icon={Wallet}
             tone="text-primary"
           />
           <Metric
             label="Total repaid"
             value={money(Math.round(repaid))}
-            prefix="$"
+            prefix="₹"
             icon={TrendingUp}
             tone="text-success"
           />
