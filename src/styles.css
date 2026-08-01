@@ -157,6 +157,7 @@
     animation: sweep 5s ease-in-out infinite;
   }
 }
+}
 
 @keyframes live-pulse {
   0%,
