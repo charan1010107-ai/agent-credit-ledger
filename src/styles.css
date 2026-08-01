@@ -192,7 +192,8 @@
   }
 }
 
-.flow-in {
-  animation: flow-in 0.45s ease-out both;
-}
+@layer components {
+  .flow-in {
+    animation: flow-in 0.45s ease-out both;
+  }
 }
