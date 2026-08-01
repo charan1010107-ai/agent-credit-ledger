@@ -58,72 +58,10 @@ function EscrowPage() {
 
   const complete = useMutation({
     mutationFn: async () => {
-      if (!loan || !agent) throw new Error("Select a funded loan");
-      const revenue = Number(loan.expected_revenue);
-      const repayment = Math.round(Number(loan.amount) * (1 + Number(loan.interest_rate) / 100));
-      const surplus = Math.max(0, revenue - repayment);
-      const before = Number(agent.wallet_balance);
-      const after = before + surplus;
-
-      const rows = [
-        {
-          agent_id: agent.id,
-          loan_id: loan.id,
-          tx_hash: txHash(),
-          tx_type: "task_revenue",
-          amount: revenue,
-          status: "confirmed",
-          memo: `Task completed — revenue captured into escrow: ${loan.task_description}`,
-        },
-        {
-          agent_id: agent.id,
-          loan_id: loan.id,
-          tx_hash: txHash(),
-          tx_type: "repayment",
-          amount: -repayment,
-          status: "confirmed",
-          memo: `Principal + ${Number(loan.interest_rate).toFixed(2)}% interest routed to lender`,
-        },
-        {
-          agent_id: agent.id,
-          loan_id: loan.id,
-          tx_hash: txHash(),
-          tx_type: "surplus_release",
-          amount: surplus,
-          status: "confirmed",
-          memo: "Surplus released to agent wallet",
-        },
-      ];
-      const { error: txError } = await supabase.from("transactions").insert(rows);
-      if (txError) throw txError;
-
-      const { error: loanError } = await supabase
-        .from("loans")
-        .update({ status: "repaid", repaid_at: new Date().toISOString() })
-        .eq("id", loan.id);
-      if (loanError) throw loanError;
-
-      const newScore = Math.min(850, agent.credit_score + 6);
-      const { error: agentError } = await supabase
-        .from("agents")
-        .update({
-          wallet_balance: after,
-          credit_score: newScore,
-          status: agent.status === "frozen" ? "frozen" : "none",
-        })
-        .eq("id", agent.id);
-      if (agentError) throw agentError;
-
-      await supabase.from("score_history").insert({ agent_id: agent.id, score: newScore });
-
-      return {
-        agentName: agent.name,
-        revenue,
-        repayment,
-        surplus,
-        before,
-        after,
-      } satisfies Settlement;
+      if (!loan) throw new Error("Select a funded loan");
+      // Escrow split is computed and written server-side from the stored loan terms.
+      const res = await settleLoanFn({ data: { loanId: loan.id } });
+      return res satisfies Settlement;
     },
     onSuccess: (s) => {
       setSettlement(s);
@@ -133,6 +71,7 @@ function EscrowPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   return (
     <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6">

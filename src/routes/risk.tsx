@@ -80,36 +80,9 @@ function RiskPage() {
 
   const freeze = useMutation({
     mutationFn: async (agent: Agent) => {
-      const reason =
-        agent.anomaly_reason ?? "Manual revocation by risk operator — policy breach suspected";
-      const { error } = await supabase
-        .from("agents")
-        .update({
-          status: "frozen",
-          wallet_balance: 0,
-          frozen_at: new Date().toISOString(),
-          freeze_reason: reason,
-        })
-        .eq("id", agent.id);
-      if (error) throw error;
-
-      const { error: txError } = await supabase.from("transactions").insert({
-        agent_id: agent.id,
-        tx_hash: txHash(),
-        tx_type: "revocation",
-        amount: 0,
-        status: "flagged",
-        memo: `ACCESS REVOKED — ${reason}`,
-      });
-      if (txError) throw txError;
-
-      await supabase
-        .from("loans")
-        .update({ status: "frozen" })
-        .eq("agent_id", agent.id)
-        .in("status", ["active", "repaying"]);
-
-      return agent.name;
+      // Kill switch executes server-side; the browser cannot write agent state directly.
+      const res = await freezeAgentFn({ data: { agentId: agent.id } });
+      return res.name;
     },
     onSuccess: (name) => {
       toast.error(`${name} FROZEN — wallet disabled, revocation logged`);
@@ -120,26 +93,16 @@ function RiskPage() {
 
   const unfreeze = useMutation({
     mutationFn: async (agent: Agent) => {
-      const { error } = await supabase
-        .from("agents")
-        .update({ status: "none", frozen_at: null, freeze_reason: null })
-        .eq("id", agent.id);
-      if (error) throw error;
-      await supabase.from("transactions").insert({
-        agent_id: agent.id,
-        tx_hash: txHash(),
-        tx_type: "reinstatement",
-        amount: 0,
-        status: "confirmed",
-        memo: "Access reinstated after operator review",
-      });
-      return agent.name;
+      const res = await unfreezeAgentFn({ data: { agentId: agent.id } });
+      return res.name;
     },
     onSuccess: (name) => {
       toast.success(`${name} reinstated`);
       qc.invalidateQueries();
     },
+    onError: (e: Error) => toast.error(e.message),
   });
+
 
   return (
     <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6">
