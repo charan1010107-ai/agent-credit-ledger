@@ -209,13 +209,13 @@ function RiskPage() {
                   <div className="text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
                     Wallet
                   </div>
-                  <div className="num text-lg">${money(a.wallet_balance)}</div>
+                  <div className="num text-lg">₹{money(a.wallet_balance)}</div>
                 </div>
                 <div>
                   <div className="text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
                     Cap
                   </div>
-                  <div className="num text-lg text-muted-foreground">${money(a.spend_cap)}</div>
+                  <div className="num text-lg text-muted-foreground">₹{money(a.spend_cap)}</div>
                 </div>
               </div>
 

@@ -128,7 +128,7 @@ function EscrowPage() {
     onSuccess: (s) => {
       setSettlement(s);
       setSelected("");
-      toast.success(`${s.agentName} settled — $${money(s.repayment)} routed to escrow`);
+      toast.success(`${s.agentName} settled — ₹${money(s.repayment)} routed to escrow`);
       qc.invalidateQueries();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -165,7 +165,7 @@ function EscrowPage() {
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">{l.task_description}</p>
                 <p className="num mt-1.5 text-[11px] text-muted-foreground">
-                  ${money(Number(l.amount))} @ {Number(l.interest_rate).toFixed(2)}% → exp. $
+                  ₹{money(Number(l.amount))} @ {Number(l.interest_rate).toFixed(2)}% → exp. ₹
                   {money(Number(l.expected_revenue))}
                 </p>
               </button>
@@ -196,7 +196,7 @@ function EscrowPage() {
                     <ArrowDownRight className="h-4 w-4" /> Task revenue captured
                   </span>
                   <span className="num text-xl font-semibold text-cyan live-glow">
-                    +${money(settlement.revenue)}
+                    +₹{money(settlement.revenue)}
                   </span>
                 </div>
               </div>
@@ -214,7 +214,7 @@ function EscrowPage() {
                     To lender escrow
                   </div>
                   <div className="num mt-1 text-2xl font-semibold text-violet">
-                    ${money(settlement.repayment)}
+                    ₹{money(settlement.repayment)}
                   </div>
                   <p className="mt-1 text-[11px] text-muted-foreground">Principal + interest</p>
                 </div>
@@ -226,7 +226,7 @@ function EscrowPage() {
                     Surplus to agent wallet
                   </div>
                   <div className="num mt-1 text-2xl font-semibold text-success">
-                    ${money(settlement.surplus)}
+                    ₹{money(settlement.surplus)}
                   </div>
                   <p className="mt-1 text-[11px] text-muted-foreground">Released on settlement</p>
                 </div>
@@ -240,7 +240,7 @@ function EscrowPage() {
                   <div className="text-[10px] tracking-[0.16em] text-muted-foreground uppercase">
                     Wallet before
                   </div>
-                  <div className="num mt-1 text-lg">${money(settlement.before)}</div>
+                  <div className="num mt-1 text-lg">₹{money(settlement.before)}</div>
                 </div>
                 <ArrowUpRight className="mx-auto h-5 w-5 text-success" />
                 <div className="text-right">
@@ -248,7 +248,7 @@ function EscrowPage() {
                     Wallet after
                   </div>
                   <div className="num mt-1 text-lg text-success live-glow">
-                    ${money(settlement.after)}
+                    ₹{money(settlement.after)}
                   </div>
                 </div>
               </div>
@@ -282,7 +282,7 @@ function EscrowPage() {
                   <td
                     className={`num py-2.5 text-right ${Number(t.amount) < 0 ? "text-violet" : "text-success"}`}
                   >
-                    {Number(t.amount) < 0 ? "−" : "+"}${money(Math.abs(Number(t.amount)))}
+                    {Number(t.amount) < 0 ? "−" : "+"}₹{money(Math.abs(Number(t.amount)))}
                   </td>
                   <td className="max-w-[320px] truncate py-2.5 text-muted-foreground">{t.memo}</td>
                   <td className="num py-2.5 text-right text-[11px] text-muted-foreground">

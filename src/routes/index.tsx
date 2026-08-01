@@ -102,13 +102,13 @@ function AgentCard({ agent }: { agent: Agent }) {
           <div className="text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
             Credit limit
           </div>
-          <div className="num mt-0.5 text-sm">${money(agent.credit_limit)}</div>
+          <div className="num mt-0.5 text-sm">₹{money(agent.credit_limit)}</div>
         </div>
         <div>
           <div className="text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
             Wallet
           </div>
-          <div className="num mt-0.5 text-sm">${money(agent.wallet_balance)}</div>
+          <div className="num mt-0.5 text-sm">₹{money(agent.wallet_balance)}</div>
         </div>
       </div>
 
@@ -170,14 +170,14 @@ function Dashboard() {
           <Metric
             label="Capital deployed"
             value={money(deployed)}
-            prefix="$"
+            prefix="₹"
             icon={Wallet}
             tone="text-primary"
           />
           <Metric
             label="Total repaid"
             value={money(Math.round(repaid))}
-            prefix="$"
+            prefix="₹"
             icon={TrendingUp}
             tone="text-success"
           />
@@ -222,7 +222,7 @@ function Dashboard() {
                       <td className="max-w-[320px] truncate py-2.5 text-muted-foreground">
                         {l.task_description}
                       </td>
-                      <td className="num py-2.5 text-right">${money(Number(l.amount))}</td>
+                      <td className="num py-2.5 text-right">₹{money(Number(l.amount))}</td>
                       <td className="num py-2.5 text-right">{Number(l.interest_rate).toFixed(2)}%</td>
                       <td className="num py-2.5 text-right text-muted-foreground">
                         {l.expected_repayment_date ?? "—"}

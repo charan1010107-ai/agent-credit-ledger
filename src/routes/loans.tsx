@@ -50,8 +50,8 @@ function LoanDesk() {
 
   const [agentId, setAgentId] = useState("");
   const [task, setTask] = useState(TASK_PRESETS[0]!);
-  const [amount, setAmount] = useState(5000);
-  const [revenue, setRevenue] = useState(8000);
+  const [amount, setAmount] = useState(400000);
+  const [revenue, setRevenue] = useState(560000);
   const [dueDate, setDueDate] = useState(
     new Date(Date.now() + 12 * 864e5).toISOString().slice(0, 10),
   );
@@ -156,7 +156,7 @@ function LoanDesk() {
                 <option value="">Select an agent…</option>
                 {list.map((a) => (
                   <option key={a.id} value={a.id}>
-                    {a.name} — score {a.credit_score} — limit ${money(a.credit_limit)}
+                    {a.name} — score {a.credit_score} — limit ₹{money(a.credit_limit)}
                     {a.status === "frozen" ? " (frozen)" : ""}
                   </option>
                 ))}
@@ -188,8 +188,8 @@ function LoanDesk() {
                 <input
                   type="number"
                   value={amount}
-                  min={100}
-                  step={100}
+                  min={1000}
+                  step={1000}
                   onChange={(e) => setAmount(Number(e.target.value))}
                   className="num mt-1.5 w-full rounded-md border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary"
                 />
@@ -202,7 +202,7 @@ function LoanDesk() {
                   type="number"
                   value={revenue}
                   min={0}
-                  step={100}
+                  step={1000}
                   onChange={(e) => setRevenue(Number(e.target.value))}
                   className="num mt-1.5 w-full rounded-md border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary"
                 />
@@ -326,7 +326,7 @@ function LoanDesk() {
                 <div className="rounded-md border border-border/60 bg-secondary/25 py-2">
                   <div className="text-[10px] text-muted-foreground">DUE AT MATURITY</div>
                   <div className="text-violet">
-                    ${money(Math.round(amount * (1 + decision.rate / 100)))}
+                    ₹{money(Math.round(amount * (1 + decision.rate / 100)))}
                   </div>
                 </div>
               </div>
@@ -371,7 +371,7 @@ function LoanDesk() {
                   >
                     {disburse.isPending
                       ? "Disbursing…"
-                      : `Disburse $${money(amount)} to scoped wallet`}
+                      : `Disburse ₹${money(amount)} to scoped wallet`}
                   </button>
                 </div>
               )}
