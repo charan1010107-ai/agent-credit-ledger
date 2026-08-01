@@ -172,29 +172,3 @@ export function money(n: number, digits = 0): string {
 export function shortHash(h: string): string {
   return `${h.slice(0, 10)}…${h.slice(-6)}`;
 }
-
-/** Deterministic underwriting model used by the loan flow. */
-export function underwrite(agent: Agent, amount: number, expectedRevenue: number) {
-  const factors: ScoreFactor[] = [...agent.score_factors];
-  const coverage = expectedRevenue > 0 ? expectedRevenue / Math.max(amount, 1) : 0;
-  const utilization = amount / Math.max(agent.credit_limit, 1);
-
-  factors.push({
-    label: "Revenue coverage ratio",
-    value: Math.round(Math.min(30, (coverage - 1) * 40)),
-  });
-  factors.push({
-    label: "Requested utilization",
-    value: Math.round(-utilization * 34),
-  });
-
-  const delta = factors.reduce((s, f) => s + f.value, 0);
-  const projected = Math.max(300, Math.min(850, Math.round(560 + delta)));
-  const approved =
-    agent.status !== "frozen" && projected >= 600 && amount <= agent.credit_limit && coverage >= 1.1;
-
-  const top = [...factors].sort((a, b) => Math.abs(b.value) - Math.abs(a.value)).slice(0, 3);
-  const rate = Math.round((4 + (800 - projected) * 0.028) * 100) / 100;
-
-  return { projected, approved, factors, topFactors: top, rate: Math.max(3.5, rate), coverage };
-}
