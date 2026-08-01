@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AlertTriangle, Ban, ShieldOff, Snowflake } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { supabase } from "@/integrations/supabase/client";
+import { freezeAgentFn, unfreezeAgentFn } from "@/lib/agentline.functions";
 import {
   fetchAgents,
   fetchTransactions,
@@ -11,10 +11,10 @@ import {
   scoreColor,
   shortHash,
   statusTone,
-  txHash,
   type Agent,
 } from "@/lib/agentline";
 import { Panel, StatusPill } from "@/components/ui-kit";
+
 
 export const Route = createFileRoute("/risk")({
   head: () => ({

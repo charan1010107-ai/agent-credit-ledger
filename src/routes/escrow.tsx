@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ArrowDownRight, ArrowUpRight, PlayCircle, Split } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { settleLoanFn } from "@/lib/agentline.functions";
 import {
   fetchAgents,
   fetchLoans,
@@ -11,9 +11,9 @@ import {
   money,
   shortHash,
   statusTone,
-  txHash,
 } from "@/lib/agentline";
 import { Panel, StatusPill } from "@/components/ui-kit";
+
 
 export const Route = createFileRoute("/escrow")({
   head: () => ({
