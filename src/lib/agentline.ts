@@ -124,12 +124,9 @@ export async function fetchScoreHistory(agentId: string): Promise<ScorePoint[]> 
 
 /* ---------- domain helpers ---------- */
 
-const HEX = "0123456789abcdef";
-export function txHash(): string {
-  let out = "0x";
-  for (let i = 0; i < 40; i++) out += HEX[Math.floor(Math.random() * 16)];
-  return out;
-}
+export { txHash, underwrite } from "./underwriting";
+
+
 
 export function scoreColor(score: number): string {
   if (score >= 760) return "text-success";
