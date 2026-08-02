@@ -286,7 +286,14 @@ function PassportPage() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="text-sm font-medium">{l.task_description}</div>
+                      <div className="text-sm font-medium">
+                        {splitTaskLabel(l.task_description).label && (
+                          <span className="mr-2 rounded border border-violet/40 bg-violet/10 px-1.5 py-0.5 text-[10px] tracking-[0.12em] text-violet uppercase">
+                            {splitTaskLabel(l.task_description).label}
+                          </span>
+                        )}
+                        {splitTaskLabel(l.task_description).text}
+                      </div>
                       <div className="num mt-1 text-[11px] text-muted-foreground">
                         ₹{money(Number(l.amount))} @ {Number(l.interest_rate).toFixed(2)}% · exp. rev
                         ₹{money(Number(l.expected_revenue))}

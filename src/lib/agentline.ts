@@ -175,6 +175,12 @@ export function money(n: number, digits = 0): string {
   return n.toLocaleString("en-IN", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
+/** Custom use-case loans store their label as a "[Name] description" prefix. */
+export function splitTaskLabel(description: string): { label: string | null; text: string } {
+  const m = /^\[([^\]]{2,60})\]\s*(.*)$/.exec(description ?? "");
+  return m ? { label: m[1]!, text: m[2]! } : { label: null, text: description ?? "" };
+}
+
 export function shortHash(h: string): string {
   return `${h.slice(0, 10)}…${h.slice(-6)}`;
 }
