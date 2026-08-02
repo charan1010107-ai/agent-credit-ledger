@@ -60,7 +60,7 @@ export async function createOwnedAgent(userId: string, input: CreateAgentInput) 
       credit_limit: p.creditLimit,
       baseline_credit_limit: p.creditLimit,
       status: "none",
-      task_scope: p.useCase.scope,
+      task_scope: p.useCase.starterTask,
       spend_cap: p.spendCap,
       wallet_balance: 0,
       task_success_rate: p.successRate,

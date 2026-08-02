@@ -169,3 +169,22 @@ export function deriveStartingProfile(input: OnboardingInput) {
     completionMinutes,
   };
 }
+
+export function useCaseFromVendors(vendors: string[] | null | undefined): UseCase {
+  const first = (vendors ?? [])[0];
+  return USE_CASES.find((u) => u.vendors[0] === first) ?? USE_CASES[0]!;
+}
+
+/** Re-derives the starter loan plan from stored agent data so every surface agrees. */
+export function starterPlanFromAgent(agent: {
+  vendor_whitelist: string[];
+  credit_limit: number;
+  baseline_credit_limit: number | null;
+  task_scope: string;
+}) {
+  const uc = useCaseFromVendors(agent.vendor_whitelist);
+  const limit = Number(agent.baseline_credit_limit ?? agent.credit_limit);
+  const suggestedLoan = Math.round(Math.min(uc.taskCost, limit * 0.7) / 1000) * 1000 || 50000;
+  const estimatedReturn = Math.round((suggestedLoan * uc.revenueMultiple) / 1000) * 1000;
+  return { useCase: uc, suggestedLoan, estimatedReturn, starterTask: agent.task_scope || uc.starterTask };
+}
