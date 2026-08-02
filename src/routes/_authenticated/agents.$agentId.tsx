@@ -25,7 +25,7 @@ import {
 import { stageMeta } from "@/lib/risk";
 import { Field, Panel, StatusPill } from "@/components/ui-kit";
 
-export const Route = createFileRoute("/agents/$agentId")({
+export const Route = createFileRoute("/_authenticated/agents/$agentId")({
   head: () => ({
     meta: [
       { title: "Agent Passport — AgentLine" },
@@ -86,7 +86,7 @@ function PassportPage() {
   return (
     <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6">
       <Link
-        to="/"
+        to="/fleet"
         className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Control room

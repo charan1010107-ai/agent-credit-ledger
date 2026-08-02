@@ -10,15 +10,23 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AboutRouteImport } from './routes/about'
-import { Route as EscrowRouteImport } from './routes/escrow'
-import { Route as LoansRouteImport } from './routes/loans'
-import { Route as RiskRouteImport } from './routes/risk'
-import { Route as AgentsAgentIdRouteImport } from './routes/agents.$agentId'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedEscrowRouteImport } from './routes/_authenticated/escrow'
+import { Route as AuthenticatedFleetRouteImport } from './routes/_authenticated/fleet'
+import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
+import { Route as AuthenticatedLoansRouteImport } from './routes/_authenticated/loans'
+import { Route as AuthenticatedRiskRouteImport } from './routes/_authenticated/risk'
+import { Route as AuthenticatedAgentsAgentIdRouteImport } from './routes/_authenticated/agents.$agentId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -26,75 +34,120 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
-const EscrowRoute = EscrowRouteImport.update({
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedEscrowRoute = AuthenticatedEscrowRouteImport.update({
   id: '/escrow',
   path: '/escrow',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const LoansRoute = LoansRouteImport.update({
+const AuthenticatedFleetRoute = AuthenticatedFleetRouteImport.update({
+  id: '/fleet',
+  path: '/fleet',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedLoansRoute = AuthenticatedLoansRouteImport.update({
   id: '/loans',
   path: '/loans',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const RiskRoute = RiskRouteImport.update({
+const AuthenticatedRiskRoute = AuthenticatedRiskRouteImport.update({
   id: '/risk',
   path: '/risk',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AgentsAgentIdRoute = AgentsAgentIdRouteImport.update({
-  id: '/agents/$agentId',
-  path: '/agents/$agentId',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const AuthenticatedAgentsAgentIdRoute =
+  AuthenticatedAgentsAgentIdRouteImport.update({
+    id: '/agents/$agentId',
+    path: '/agents/$agentId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/escrow': typeof EscrowRoute
-  '/loans': typeof LoansRoute
-  '/risk': typeof RiskRoute
-  '/agents/$agentId': typeof AgentsAgentIdRoute
+  '/auth': typeof AuthRoute
+  '/escrow': typeof AuthenticatedEscrowRoute
+  '/fleet': typeof AuthenticatedFleetRoute
+  '/home': typeof AuthenticatedHomeRoute
+  '/loans': typeof AuthenticatedLoansRoute
+  '/risk': typeof AuthenticatedRiskRoute
+  '/agents/$agentId': typeof AuthenticatedAgentsAgentIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/escrow': typeof EscrowRoute
-  '/loans': typeof LoansRoute
-  '/risk': typeof RiskRoute
-  '/agents/$agentId': typeof AgentsAgentIdRoute
+  '/auth': typeof AuthRoute
+  '/escrow': typeof AuthenticatedEscrowRoute
+  '/fleet': typeof AuthenticatedFleetRoute
+  '/home': typeof AuthenticatedHomeRoute
+  '/loans': typeof AuthenticatedLoansRoute
+  '/risk': typeof AuthenticatedRiskRoute
+  '/agents/$agentId': typeof AuthenticatedAgentsAgentIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/about': typeof AboutRoute
-  '/escrow': typeof EscrowRoute
-  '/loans': typeof LoansRoute
-  '/risk': typeof RiskRoute
-  '/agents/$agentId': typeof AgentsAgentIdRoute
+  '/auth': typeof AuthRoute
+  '/_authenticated/escrow': typeof AuthenticatedEscrowRoute
+  '/_authenticated/fleet': typeof AuthenticatedFleetRoute
+  '/_authenticated/home': typeof AuthenticatedHomeRoute
+  '/_authenticated/loans': typeof AuthenticatedLoansRoute
+  '/_authenticated/risk': typeof AuthenticatedRiskRoute
+  '/_authenticated/agents/$agentId': typeof AuthenticatedAgentsAgentIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/about' | '/escrow' | '/loans' | '/risk' | '/agents/$agentId'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/escrow' | '/loans' | '/risk' | '/agents/$agentId'
-  id:
-    | '__root__'
     | '/'
     | '/about'
+    | '/auth'
     | '/escrow'
+    | '/fleet'
+    | '/home'
     | '/loans'
     | '/risk'
     | '/agents/$agentId'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/about'
+    | '/auth'
+    | '/escrow'
+    | '/fleet'
+    | '/home'
+    | '/loans'
+    | '/risk'
+    | '/agents/$agentId'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/about'
+    | '/auth'
+    | '/_authenticated/escrow'
+    | '/_authenticated/fleet'
+    | '/_authenticated/home'
+    | '/_authenticated/loans'
+    | '/_authenticated/risk'
+    | '/_authenticated/agents/$agentId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AboutRoute: typeof AboutRoute
-  EscrowRoute: typeof EscrowRoute
-  LoansRoute: typeof LoansRoute
-  RiskRoute: typeof RiskRoute
-  AgentsAgentIdRoute: typeof AgentsAgentIdRoute
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -106,6 +159,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -113,44 +173,84 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/escrow': {
-      id: '/escrow'
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/escrow': {
+      id: '/_authenticated/escrow'
       path: '/escrow'
       fullPath: '/escrow'
-      preLoaderRoute: typeof EscrowRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedEscrowRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/loans': {
-      id: '/loans'
+    '/_authenticated/fleet': {
+      id: '/_authenticated/fleet'
+      path: '/fleet'
+      fullPath: '/fleet'
+      preLoaderRoute: typeof AuthenticatedFleetRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/home': {
+      id: '/_authenticated/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof AuthenticatedHomeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/loans': {
+      id: '/_authenticated/loans'
       path: '/loans'
       fullPath: '/loans'
-      preLoaderRoute: typeof LoansRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedLoansRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/risk': {
-      id: '/risk'
+    '/_authenticated/risk': {
+      id: '/_authenticated/risk'
       path: '/risk'
       fullPath: '/risk'
-      preLoaderRoute: typeof RiskRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedRiskRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/agents/$agentId': {
-      id: '/agents/$agentId'
+    '/_authenticated/agents/$agentId': {
+      id: '/_authenticated/agents/$agentId'
       path: '/agents/$agentId'
       fullPath: '/agents/$agentId'
-      preLoaderRoute: typeof AgentsAgentIdRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedAgentsAgentIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedEscrowRoute: typeof AuthenticatedEscrowRoute
+  AuthenticatedFleetRoute: typeof AuthenticatedFleetRoute
+  AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
+  AuthenticatedLoansRoute: typeof AuthenticatedLoansRoute
+  AuthenticatedRiskRoute: typeof AuthenticatedRiskRoute
+  AuthenticatedAgentsAgentIdRoute: typeof AuthenticatedAgentsAgentIdRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedEscrowRoute: AuthenticatedEscrowRoute,
+  AuthenticatedFleetRoute: AuthenticatedFleetRoute,
+  AuthenticatedHomeRoute: AuthenticatedHomeRoute,
+  AuthenticatedLoansRoute: AuthenticatedLoansRoute,
+  AuthenticatedRiskRoute: AuthenticatedRiskRoute,
+  AuthenticatedAgentsAgentIdRoute: AuthenticatedAgentsAgentIdRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AboutRoute: AboutRoute,
-  EscrowRoute: EscrowRoute,
-  LoansRoute: LoansRoute,
-  RiskRoute: RiskRoute,
-  AgentsAgentIdRoute: AgentsAgentIdRoute,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

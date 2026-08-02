@@ -15,7 +15,7 @@ import {
 import { Panel, StatusPill } from "@/components/ui-kit";
 
 
-export const Route = createFileRoute("/escrow")({
+export const Route = createFileRoute("/_authenticated/escrow")({
   head: () => ({
     meta: [
       { title: "Escrow & Repayment — AgentLine" },
