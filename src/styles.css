@@ -69,6 +69,7 @@
   --cyan: oklch(0.78 0.15 200);
   --success: oklch(0.74 0.17 158);
   --warning: oklch(0.79 0.16 78);
+  --orange: oklch(0.72 0.19 48);
   --grid: oklch(0.28 0.035 266);
   --chart-1: oklch(0.68 0.19 250);
   --chart-2: oklch(0.66 0.21 300);
