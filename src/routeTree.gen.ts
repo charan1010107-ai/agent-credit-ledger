@@ -15,6 +15,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedEscrowRouteImport } from './routes/_authenticated/escrow'
 import { Route as AuthenticatedFleetRouteImport } from './routes/_authenticated/fleet'
+import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedLoansRouteImport } from './routes/_authenticated/loans'
 import { Route as AuthenticatedRiskRouteImport } from './routes/_authenticated/risk'
 import { Route as AuthenticatedAgentsAgentIdRouteImport } from './routes/_authenticated/agents.$agentId'
@@ -48,6 +49,11 @@ const AuthenticatedFleetRoute = AuthenticatedFleetRouteImport.update({
   path: '/fleet',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedLoansRoute = AuthenticatedLoansRouteImport.update({
   id: '/loans',
   path: '/loans',
@@ -71,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/escrow': typeof AuthenticatedEscrowRoute
   '/fleet': typeof AuthenticatedFleetRoute
+  '/home': typeof AuthenticatedHomeRoute
   '/loans': typeof AuthenticatedLoansRoute
   '/risk': typeof AuthenticatedRiskRoute
   '/agents/$agentId': typeof AuthenticatedAgentsAgentIdRoute
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/escrow': typeof AuthenticatedEscrowRoute
   '/fleet': typeof AuthenticatedFleetRoute
+  '/home': typeof AuthenticatedHomeRoute
   '/loans': typeof AuthenticatedLoansRoute
   '/risk': typeof AuthenticatedRiskRoute
   '/agents/$agentId': typeof AuthenticatedAgentsAgentIdRoute
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/escrow': typeof AuthenticatedEscrowRoute
   '/_authenticated/fleet': typeof AuthenticatedFleetRoute
+  '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/loans': typeof AuthenticatedLoansRoute
   '/_authenticated/risk': typeof AuthenticatedRiskRoute
   '/_authenticated/agents/$agentId': typeof AuthenticatedAgentsAgentIdRoute
@@ -105,6 +114,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/escrow'
     | '/fleet'
+    | '/home'
     | '/loans'
     | '/risk'
     | '/agents/$agentId'
@@ -115,6 +125,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/escrow'
     | '/fleet'
+    | '/home'
     | '/loans'
     | '/risk'
     | '/agents/$agentId'
@@ -126,6 +137,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/escrow'
     | '/_authenticated/fleet'
+    | '/_authenticated/home'
     | '/_authenticated/loans'
     | '/_authenticated/risk'
     | '/_authenticated/agents/$agentId'
@@ -182,6 +194,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFleetRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/home': {
+      id: '/_authenticated/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof AuthenticatedHomeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/loans': {
       id: '/_authenticated/loans'
       path: '/loans'
@@ -209,6 +228,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedEscrowRoute: typeof AuthenticatedEscrowRoute
   AuthenticatedFleetRoute: typeof AuthenticatedFleetRoute
+  AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedLoansRoute: typeof AuthenticatedLoansRoute
   AuthenticatedRiskRoute: typeof AuthenticatedRiskRoute
   AuthenticatedAgentsAgentIdRoute: typeof AuthenticatedAgentsAgentIdRoute
@@ -217,6 +237,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedEscrowRoute: AuthenticatedEscrowRoute,
   AuthenticatedFleetRoute: AuthenticatedFleetRoute,
+  AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedLoansRoute: AuthenticatedLoansRoute,
   AuthenticatedRiskRoute: AuthenticatedRiskRoute,
   AuthenticatedAgentsAgentIdRoute: AuthenticatedAgentsAgentIdRoute,
