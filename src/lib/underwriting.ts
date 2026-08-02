@@ -6,7 +6,20 @@ export type UnderwritableAgent = {
   status: string;
   credit_limit: number;
   score_factors: ScoreFactor[];
+  /** The agent's standing score — the anchor every request is scored against. */
+  credit_score?: number;
 };
+
+/**
+ * Anchor score for a request. Uses the agent's own standing score when it has one
+ * (newly issued agents are scored at creation), falling back to the generic
+ * 560 + baseline-factors anchor for legacy rows without a stored score.
+ */
+function anchorScore(agent: UnderwritableAgent): number {
+  const stored = Number(agent.credit_score);
+  if (Number.isFinite(stored) && stored > 0) return stored;
+  return 560 + (agent.score_factors ?? []).reduce((s, f) => s + f.value, 0);
+}
 
 const HEX = "0123456789abcdef";
 
