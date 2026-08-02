@@ -100,17 +100,22 @@ export function underwrite(agent: UnderwritableAgent, amount: number, expectedRe
   const coverage = expectedRevenue > 0 ? expectedRevenue / Math.max(amount, 1) : 0;
   const utilization = amount / Math.max(Number(agent.credit_limit), 1);
 
-  factors.push({
-    label: "Revenue coverage ratio",
-    value: Math.round(Math.min(30, (coverage - 1) * 40)),
-  });
-  factors.push({
-    label: "Requested utilization",
-    value: Math.round(-utilization * 34),
-  });
+  const requestFactors: ScoreFactor[] = [
+    {
+      label: "Revenue coverage ratio",
+      value: Math.round(Math.min(30, (coverage - 1) * 40)),
+    },
+    {
+      label: "Requested utilization",
+      value: Math.round(-utilization * 34),
+    },
+  ];
+  factors.push(...requestFactors);
 
-  const delta = factors.reduce((s, f) => s + f.value, 0);
-  const projected = Math.max(300, Math.min(850, Math.round(560 + delta)));
+  // The standing score already prices the baseline factors; only the request-specific
+  // factors move it. Anchoring on a flat 560 made freshly issued agents undecidable.
+  const delta = requestFactors.reduce((s, f) => s + f.value, 0);
+  const projected = Math.max(300, Math.min(850, Math.round(anchorScore(agent) + delta)));
   const approved =
     agent.status !== "frozen" &&
     projected >= 600 &&
