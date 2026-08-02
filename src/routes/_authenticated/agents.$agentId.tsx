@@ -21,6 +21,7 @@ import {
   scoreBand,
   scoreColor,
   statusTone,
+  splitTaskLabel,
 } from "@/lib/agentline";
 import { stageMeta } from "@/lib/risk";
 import { Field, Panel, StatusPill } from "@/components/ui-kit";
