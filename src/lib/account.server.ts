@@ -115,7 +115,15 @@ export async function createOwnedAgent(userId: string, input: CreateAgentInput) 
         status: "confirmed",
         created_at: new Date(Date.parse(r.task_date) || Date.now()).toISOString(),
       };
-      const entries: Record<string, unknown>[] = [
+      const entries: {
+        agent_id: string;
+        status: string;
+        created_at: string;
+        tx_hash: string;
+        tx_type: string;
+        amount: number;
+        memo: string;
+      }[] = [
         {
           ...base,
           tx_hash: txHash(),
