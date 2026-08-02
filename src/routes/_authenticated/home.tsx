@@ -34,7 +34,7 @@ import {
   escalateRiskFn,
   deescalateRiskFn,
 } from "@/lib/agentline.functions";
-import { fetchLoans, money, scoreBand, scoreColor, rateForScore } from "@/lib/agentline";
+import { fetchLoansForAgent, money, scoreBand, scoreColor, rateForScore } from "@/lib/agentline";
 import { stageMeta, stageActionLabel } from "@/lib/risk";
 import { Field, Panel, StatusPill } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
@@ -138,6 +138,7 @@ function CreateAgent() {
                   avgCost: derived.stats.avgCost,
                   revenueConsistency: derived.stats.revenueConsistency,
                 },
+                taskRows: derived.rows,
               }
             : {}),
         },
@@ -581,8 +582,11 @@ function MyAgent({ agent, principal }: { agent: AgentT; principal: string }) {
   const stage = stageMeta(agent.risk_stage);
   const { tier, rate } = rateForScore(agent.credit_score);
 
-  const loansQ = useQuery({ queryKey: ["loans"], queryFn: fetchLoans });
-  const myLoans = (loansQ.data ?? []).filter((l) => l.agent_id === agent.id);
+  const loansQ = useQuery({
+    queryKey: ["loans", agent.id],
+    queryFn: () => fetchLoansForAgent(agent.id),
+  });
+  const myLoans = loansQ.data ?? [];
   const openLoan = myLoans.find((l) => ["active", "repaying"].includes(l.status));
 
   const [split, setSplit] = useState<Awaited<ReturnType<typeof settleLoanFn>> | null>(null);
