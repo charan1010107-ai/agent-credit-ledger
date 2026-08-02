@@ -2,7 +2,7 @@
 // privileged client, after the values are recomputed from the database — never trusted
 // from the browser. The public Data API is read-only.
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { txHash, underwrite, type ScoreFactor } from "./underwriting";
+import { txHash, underwrite, underwriteCustom, type ScoreFactor } from "./underwriting";
 import { nextStage, stageMeta, type RiskStage } from "./risk";
 
 type AgentRow = {
@@ -17,13 +17,17 @@ type AgentRow = {
   risk_stage: string;
   risk_signals: number;
   baseline_credit_limit: number | null;
+  task_success_rate: number;
+  spend_consistency: number;
+  recent_task_revenue: number[];
+  principals: { reputation_score: number } | null;
 };
 
 async function loadAgent(agentId: string): Promise<AgentRow> {
   const { data, error } = await supabaseAdmin
     .from("agents")
     .select(
-      "id, name, status, credit_limit, credit_score, wallet_balance, vendor_whitelist, score_factors, risk_stage, risk_signals, baseline_credit_limit",
+      "id, name, status, credit_limit, credit_score, wallet_balance, vendor_whitelist, score_factors, risk_stage, risk_signals, baseline_credit_limit, task_success_rate, spend_consistency, recent_task_revenue, principals(reputation_score)",
     )
     .eq("id", agentId)
     .maybeSingle();
@@ -38,50 +42,93 @@ export async function disburseLoan(input: {
   expectedRevenue: number;
   taskDescription: string;
   dueDate: string;
+  custom?: { name: string; vendors: string[]; timeframeDays: number } | undefined;
 }) {
   const agent = await loadAgent(input.agentId);
 
   // Re-run underwriting server-side: the browser's decision is only a preview.
-  const decision = underwrite(agent, input.amount, input.expectedRevenue);
-  if (!decision.approved) throw new Error("Loan declined by underwriting");
+  // Custom (user-defined) use cases are scored off the agent's own track record.
+  const custom = input.custom;
+  const decision = custom
+    ? underwriteCustom(agent, {
+        name: custom.name,
+        amount: input.amount,
+        expectedRevenue: input.expectedRevenue,
+        timeframeDays: custom.timeframeDays,
+      })
+    : underwrite(agent, input.amount, input.expectedRevenue);
+
+  const amount = custom
+    ? Math.min(input.amount, (decision as ReturnType<typeof underwriteCustom>).maxAmount)
+    : input.amount;
+
+  const ok = custom
+    ? (decision as ReturnType<typeof underwriteCustom>).approved ||
+      ((decision as ReturnType<typeof underwriteCustom>).partial && amount >= 1000)
+    : decision.approved;
+  if (!ok) throw new Error("Loan declined by underwriting");
+
+  const description = custom
+    ? `[${custom.name}] ${input.taskDescription}`
+    : input.taskDescription;
+
+  const reasons = decision.topFactors.map(
+    (f) => `${f.value >= 0 ? "+" : ""}${f.value} ${f.label.toLowerCase()}`,
+  );
+  if (custom) {
+    const d = decision as ReturnType<typeof underwriteCustom>;
+    reasons.push(...d.notes);
+    if (d.partial) {
+      reasons.push(
+        `Partial approval — score ${d.projected} supports ₹${d.maxAmount.toLocaleString("en-IN")} of the ₹${input.amount.toLocaleString("en-IN")} requested`,
+      );
+    }
+  }
 
   const hash = txHash();
   const { data: loan, error } = await supabaseAdmin
     .from("loans")
     .insert({
       agent_id: agent.id,
-      amount: input.amount,
+      amount,
       interest_rate: decision.rate,
-      task_description: input.taskDescription,
+      task_description: description,
       expected_revenue: input.expectedRevenue,
       expected_repayment_date: input.dueDate,
       status: "active",
-      decision_reasons: decision.topFactors.map(
-        (f) => `${f.value >= 0 ? "+" : ""}${f.value} ${f.label.toLowerCase()}`,
-      ),
+      decision_reasons: reasons,
       disbursed_at: new Date().toISOString(),
     })
     .select("id")
     .single();
   if (error || !loan) throw new Error("Unable to create loan");
 
+  const whitelist =
+    custom && custom.vendors.length > 0 ? custom.vendors : (agent.vendor_whitelist ?? []);
+
   const { error: txError } = await supabaseAdmin.from("transactions").insert({
     agent_id: agent.id,
     loan_id: loan.id,
     tx_hash: hash,
     tx_type: "disbursement",
-    amount: input.amount,
+    amount,
     status: "confirmed",
-    memo: `Scoped wallet funded — whitelist: ${(agent.vendor_whitelist ?? []).join(", ")}`,
+    memo: `Scoped wallet funded${custom ? ` for custom use case "${custom.name}"` : ""} — whitelist: ${whitelist.join(", ")}`,
   });
   if (txError) throw new Error("Unable to record disbursement");
+
+  // Custom vendors are folded into the agent's whitelist so the wallet policy layer allows them.
+  const mergedWhitelist = Array.from(
+    new Set([...(agent.vendor_whitelist ?? []), ...(custom?.vendors ?? [])]),
+  );
 
   const { error: agentError } = await supabaseAdmin
     .from("agents")
     .update({
       status: "active",
-      wallet_balance: Number(agent.wallet_balance) + input.amount,
+      wallet_balance: Number(agent.wallet_balance) + amount,
       credit_score: decision.projected,
+      vendor_whitelist: mergedWhitelist,
     })
     .eq("id", agent.id);
   if (agentError) throw new Error("Unable to update agent wallet");
@@ -90,7 +137,12 @@ export async function disburseLoan(input: {
     .from("score_history")
     .insert({ agent_id: agent.id, score: decision.projected });
 
-  return { id: loan.id as string, hash };
+  return {
+    id: loan.id as string,
+    hash,
+    amount,
+    partial: custom ? (decision as ReturnType<typeof underwriteCustom>).partial : false,
+  };
 }
 
 export async function freezeAgent(agentId: string) {
@@ -238,11 +290,20 @@ export async function settleLoan(loanId: string) {
   if (loanError) throw new Error("Unable to close loan");
 
   const newScore = Math.min(850, Number(agent.credit_score) + 6);
+  // Fold this task's outcome back into the agent's behavioural history so future
+  // requests — including future custom use cases — are scored on it.
+  const revenueHistory = [...(agent.recent_task_revenue ?? []), revenue].slice(-12);
+  const priorTasks = (agent.recent_task_revenue ?? []).length;
+  const successRate =
+    Math.round(((Number(agent.task_success_rate) * priorTasks + 100) / (priorTasks + 1)) * 10) / 10;
+
   const { error: agentError } = await supabaseAdmin
     .from("agents")
     .update({
       wallet_balance: after,
       credit_score: newScore,
+      recent_task_revenue: revenueHistory,
+      task_success_rate: successRate,
       status: agent.status === "frozen" ? "frozen" : "none",
     })
     .eq("id", agent.id);

@@ -7,9 +7,17 @@ import {
   BadgeCheck,
   Loader2,
   ShieldAlert,
+  SlidersHorizontal,
   Sparkles,
+  Upload,
   Wallet,
 } from "lucide-react";
+import {
+  SAMPLE_CSV_HEADER,
+  parseTaskHistoryCsv,
+  type CsvDerivation,
+} from "@/lib/csv-profile";
+
 import { supabase } from "@/integrations/supabase/client";
 import { fetchMyAgent, fetchMyProfile, principalLabel, useSession } from "@/lib/account";
 import {
@@ -91,6 +99,7 @@ const FREQUENCIES: { key: Frequency; label: string }[] = [
 
 function CreateAgent() {
   const qc = useQueryClient();
+  const [mode, setMode] = useState<"manual" | "upload">("manual");
   const [step, setStep] = useState<"form" | "summary">("form");
   const [agentName, setAgentName] = useState("");
   const [useCase, setUseCase] = useState<UseCaseKey>("data_scraping");
@@ -98,17 +107,69 @@ function CreateAgent() {
   const [riskTolerance, setRiskTolerance] = useState(3);
   const [spendIntensity, setSpendIntensity] = useState(3);
 
+  // Upload path state — derived values land in the same fields the sliders drive.
+  const [derived, setDerived] = useState<CsvDerivation | null>(null);
+  const [csvError, setCsvError] = useState<string | null>(null);
+  const [fileName, setFileName] = useState("");
+  const [starterTask, setStarterTask] = useState("");
+
   const input = { agentName: agentName.trim() || "Unnamed", useCase, frequency, riskTolerance, spendIntensity };
   const preview = deriveStartingProfile(input);
+  const effectiveTask = starterTask.trim() || preview.useCase.starterTask;
+  const vendors = derived?.vendors.length ? derived.vendors : preview.useCase.vendors;
 
   const create = useMutation({
-    mutationFn: () => createAgentFn({ data: { ...input, agentName: agentName.trim() } }),
+    mutationFn: () =>
+      createAgentFn({
+        data: {
+          ...input,
+          agentName: agentName.trim(),
+          source: derived ? ("upload" as const) : ("manual" as const),
+          starterTask: effectiveTask,
+          vendorWhitelist: vendors,
+          ...(derived
+            ? {
+                derivedStats: {
+                  rows: derived.stats.rows,
+                  successes: derived.stats.successes,
+                  failures: derived.stats.failures,
+                  successRate: derived.stats.successRate,
+                  avgRevenue: derived.stats.avgRevenue,
+                  avgCost: derived.stats.avgCost,
+                  revenueConsistency: derived.stats.revenueConsistency,
+                },
+              }
+            : {}),
+        },
+      }),
     onSuccess: async () => {
       toast.success("Agent Passport issued");
       await qc.invalidateQueries();
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  async function onFile(file: File) {
+    setCsvError(null);
+    setFileName(file.name);
+    const text = await file.text();
+    const res = parseTaskHistoryCsv(text);
+    if (!res.ok) {
+      setDerived(null);
+      setCsvError(res.error);
+      setMode("manual");
+      toast.error(`Couldn't use that file — ${res.error} Switched to the manual form.`);
+      return;
+    }
+    const d = res.value;
+    setDerived(d);
+    setUseCase(d.useCase);
+    setFrequency(d.frequency);
+    setRiskTolerance(d.riskTolerance);
+    setSpendIntensity(d.spendIntensity);
+    setStarterTask(d.starterTask);
+    toast.success(`Derived a profile from ${d.stats.rows} task rows`);
+  }
 
   if (step === "summary") {
     return (
@@ -119,7 +180,9 @@ function CreateAgent() {
           </p>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight">Here's your agent</h1>
           <p className="mt-1.5 text-[13px] text-muted-foreground">
-            Derived deterministically from your use case and behavioural settings — nothing random.
+            {derived
+              ? "Derived deterministically from your uploaded task history — nothing random."
+              : "Derived deterministically from your use case and behavioural settings — nothing random."}
           </p>
         </div>
 
@@ -150,7 +213,8 @@ function CreateAgent() {
             <dl className="mt-4">
               <Field label="Credit limit" value={`₹${money(preview.creditLimit)}`} mono />
               <Field label="Scoped spend cap" value={`₹${money(preview.spendCap)}`} mono />
-              <Field label="Starter task" value={preview.useCase.starterTask} />
+              <Field label="Starter task" value={effectiveTask} />
+              <Field label="Vendor whitelist" value={vendors.join(", ")} mono />
               <Field
                 label="Suggested first loan"
                 value={`₹${money(preview.suggestedLoan)}`}
@@ -164,25 +228,61 @@ function CreateAgent() {
             </dl>
           </Panel>
 
-          <Panel title="Score attribution" subtitle="How the starting score was assembled">
-            <p className="num text-[11px] text-muted-foreground">Neutral anchor 620</p>
-            <ul className="mt-3 space-y-2">
-              {preview.factors.map((f) => (
-                <li key={f.label} className="flex items-center justify-between gap-3 text-[13px]">
-                  <span className="text-muted-foreground">{f.label}</span>
-                  <span
-                    className={cn(
-                      "num font-medium",
-                      f.value >= 0 ? "text-success" : "text-destructive",
-                    )}
-                  >
-                    {f.value >= 0 ? "+" : ""}
-                    {f.value}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </Panel>
+          <div className="space-y-4">
+            <Panel title="Score attribution" subtitle="How the starting score was assembled">
+              <p className="num text-[11px] text-muted-foreground">Neutral anchor 620</p>
+              <ul className="mt-3 space-y-2">
+                {preview.factors.map((f) => (
+                  <li key={f.label} className="flex items-center justify-between gap-3 text-[13px]">
+                    <span className="text-muted-foreground">{f.label}</span>
+                    <span
+                      className={cn(
+                        "num font-medium",
+                        f.value >= 0 ? "text-success" : "text-destructive",
+                      )}
+                    >
+                      {f.value >= 0 ? "+" : ""}
+                      {f.value}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+
+            {derived && (
+              <Panel title="Derived from your data" subtitle={fileName || "Uploaded task history"}>
+                <dl>
+                  <Field label="Rows parsed" value={`${derived.stats.rows}`} mono />
+                  <Field
+                    label="Success rate"
+                    value={`${derived.stats.successRate}% (${derived.stats.successes} ok / ${derived.stats.failures} failed)`}
+                    mono
+                  />
+                  <Field
+                    label="Avg revenue / successful task"
+                    value={`₹${money(derived.stats.avgRevenue)}`}
+                    mono
+                  />
+                  <Field label="Avg cost / task" value={`₹${money(derived.stats.avgCost)}`} mono />
+                  <Field
+                    label="Revenue consistency"
+                    value={`${derived.stats.revenueConsistency}/100 · variance ₹${money(derived.stats.revenueVariance)}`}
+                    mono
+                  />
+                  <Field
+                    label="Cadence"
+                    value={`${derived.stats.tasksPerDay} tasks/day over ${derived.stats.spanDays}d`}
+                    mono
+                  />
+                </dl>
+                <ul className="mt-3 space-y-1 border-t border-border/60 pt-3 text-[11px] text-muted-foreground">
+                  {derived.notes.map((n) => (
+                    <li key={n}>· {n}</li>
+                  ))}
+                </ul>
+              </Panel>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-3">
@@ -217,10 +317,114 @@ function CreateAgent() {
         </p>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight">Create your agent</h1>
         <p className="mt-1.5 text-[13px] text-muted-foreground">
-          Each account operates exactly one agent. Its opening credit line is derived from the
-          use case and the behavioural assumptions you set below.
+          Each account operates exactly one agent. Build its profile by hand, or upload real task
+          history and have the same numbers derived for you.
         </p>
       </div>
+
+      <Panel title="How do you want to build the profile?">
+        <div className="grid gap-2.5 sm:grid-cols-2">
+          {(
+            [
+              {
+                key: "manual" as const,
+                label: "Fill in manually",
+                blurb: "Pick a use case and set frequency, risk and spend by hand.",
+              },
+              {
+                key: "upload" as const,
+                label: "Upload task history",
+                blurb: "Drop a CSV of past tasks — we derive the same inputs from it.",
+              },
+            ]
+          ).map((m) => (
+            <button
+              key={m.key}
+              onClick={() => setMode(m.key)}
+              className={cn(
+                "flex items-start gap-3 rounded-lg border p-3.5 text-left transition-colors",
+                mode === m.key
+                  ? "border-primary/60 bg-primary/10"
+                  : "border-border bg-secondary/25 hover:bg-secondary/50",
+              )}
+            >
+              {m.key === "manual" ? (
+                <SlidersHorizontal className="mt-0.5 h-4 w-4 text-primary" />
+              ) : (
+                <Upload className="mt-0.5 h-4 w-4 text-primary" />
+              )}
+              <span>
+                <span className="block text-[13px] font-medium">{m.label}</span>
+                <span className="mt-1 block text-[12px] leading-relaxed text-muted-foreground">
+                  {m.blurb}
+                </span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </Panel>
+
+      {mode === "upload" && (
+        <Panel title="Task history upload" subtitle="CSV · max 200 rows · min 5 rows">
+          <p className="num text-[11px] break-all text-muted-foreground">
+            Required columns: {SAMPLE_CSV_HEADER}
+          </p>
+          <label className="mt-3 flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-primary/50 bg-primary/5 px-4 py-5 text-[13px] transition-colors hover:bg-primary/10">
+            <Upload className="h-4 w-4 text-primary" />
+            <span>
+              {fileName ? (
+                <>
+                  <span className="font-medium">{fileName}</span>
+                  <span className="block text-[11px] text-muted-foreground">
+                    Choose a different file
+                  </span>
+                </>
+              ) : (
+                "Choose a CSV file of past tasks"
+              )}
+            </span>
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void onFile(f);
+              }}
+            />
+          </label>
+
+          {csvError && (
+            <p className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-[12px] text-destructive">
+              {csvError} We've switched you to the manual form — you can fill the profile in by
+              hand, or fix the file and upload again.
+            </p>
+          )}
+
+          {derived && (
+            <div className="mt-4 space-y-2 border-t border-border/60 pt-4">
+              <p className="text-[10px] tracking-[0.16em] text-muted-foreground uppercase">
+                Derived from {derived.stats.rows} rows — edit anything below before confirming
+              </p>
+              <ul className="num space-y-1 text-[11px] text-muted-foreground">
+                {derived.notes.map((n) => (
+                  <li key={n}>· {n}</li>
+                ))}
+              </ul>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {vendors.map((v) => (
+                  <span
+                    key={v}
+                    className="rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary"
+                  >
+                    {v}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </Panel>
+      )}
 
       <Panel title="Identity">
         <span className="text-[10px] tracking-[0.16em] text-muted-foreground uppercase">
@@ -235,7 +439,10 @@ function CreateAgent() {
         />
       </Panel>
 
-      <Panel title="Sample use case" subtitle="What this agent will do">
+      <Panel
+        title="Sample use case"
+        subtitle={derived ? "Derived from your file — change it if it's wrong" : "What this agent will do"}
+      >
         <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
           {USE_CASES.map((uc) => (
             <button
@@ -253,6 +460,21 @@ function CreateAgent() {
             </button>
           ))}
         </div>
+
+        {derived && (
+          <label className="mt-4 block">
+            <span className="text-[10px] tracking-[0.16em] text-muted-foreground uppercase">
+              Starter task description
+            </span>
+            <textarea
+              value={starterTask}
+              maxLength={200}
+              rows={2}
+              onChange={(e) => setStarterTask(e.target.value)}
+              className="mt-1.5 w-full rounded-md border border-border bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary/60"
+            />
+          </label>
+        )}
       </Panel>
 
       <Panel title="Starting behavioural assumptions">
@@ -312,6 +534,7 @@ function CreateAgent() {
     </div>
   );
 }
+
 
 function Slider({
   label,

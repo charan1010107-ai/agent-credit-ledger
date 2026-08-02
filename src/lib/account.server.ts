@@ -48,6 +48,12 @@ export async function createOwnedAgent(userId: string, input: CreateAgentInput) 
   }
 
   const p = deriveStartingProfile(input);
+  const starterTask = input.starterTask?.trim() || p.useCase.starterTask;
+  const vendors =
+    input.vendorWhitelist && input.vendorWhitelist.length > 0
+      ? input.vendorWhitelist
+      : p.useCase.vendors;
+  const stats = input.derivedStats;
 
   const { data: agent, error } = await supabaseAdmin
     .from("agents")
@@ -60,14 +66,14 @@ export async function createOwnedAgent(userId: string, input: CreateAgentInput) 
       credit_limit: p.creditLimit,
       baseline_credit_limit: p.creditLimit,
       status: "none",
-      task_scope: p.useCase.starterTask,
+      task_scope: starterTask,
       spend_cap: p.spendCap,
       wallet_balance: 0,
-      task_success_rate: p.successRate,
+      task_success_rate: stats ? Math.round(stats.successRate) : p.successRate,
       avg_completion_minutes: p.completionMinutes,
-      spend_consistency: p.spendConsistency,
+      spend_consistency: stats ? Math.round(stats.revenueConsistency) : p.spendConsistency,
       anomaly: false,
-      vendor_whitelist: p.useCase.vendors,
+      vendor_whitelist: vendors,
       score_factors: p.factors,
       recent_task_revenue: [],
       spend_velocity: [],
@@ -86,8 +92,13 @@ export async function createOwnedAgent(userId: string, input: CreateAgentInput) 
     tx_type: "passport_issued",
     amount: 0,
     status: "confirmed",
-    memo: `Agent Passport issued to ${principalName} — starter task: ${p.useCase.starterTask}`,
+    memo:
+      `Agent Passport issued to ${principalName} — starter task: ${starterTask}` +
+      (stats
+        ? ` · derived from ${stats.rows} uploaded task rows (${stats.successRate}% success, ${stats.failures} failures)`
+        : ""),
   });
+
 
   return { agentId: agent.id as string, score: p.score };
 }
