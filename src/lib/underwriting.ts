@@ -216,18 +216,22 @@ export function underwriteCustom(agent: BehavioralAgent, req: CustomRequest) {
   const top = [...factors].sort((a, b) => Math.abs(b.value) - Math.abs(a.value)).slice(0, 3);
 
   // Score-supported exposure, always capped by the agent's overall limit.
-  const supportRatio = Math.max(0, Math.min(1, (projected - 520) / 300));
-  const scoreSupported = Math.round((Number(agent.credit_limit) * supportRatio) / 1000) * 1000;
+  // A scoring-eligible agent must always be able to draw something — never ₹0.
+  const scoreEligible = agent.status !== "frozen" && projected >= 600;
+  const supportRatio = Math.max(scoreEligible ? 0.15 : 0, Math.min(1, (projected - 520) / 300));
+  const round1k = (v: number) => Math.max(1000, Math.round(v / 1000) * 1000);
+  const scoreSupported = round1k(Number(agent.credit_limit) * supportRatio);
   const coverageCap =
-    coverage > 0 ? Math.round((req.expectedRevenue / 1.1 / (1 + rate / 100)) / 1000) * 1000 : 0;
+    coverage > 0 ? round1k(req.expectedRevenue / 1.1 / (1 + rate / 100)) : 0;
   const maxAmount = Math.max(
     0,
     Math.min(Number(agent.credit_limit), scoreSupported, coverageCap || scoreSupported),
   );
 
-  const eligible = agent.status !== "frozen" && projected >= 600 && maxAmount >= 1000;
+  const eligible = scoreEligible && maxAmount >= 1000;
   const approved = eligible && req.amount <= maxAmount;
   const partial = eligible && !approved;
+
 
   return {
     projected,
