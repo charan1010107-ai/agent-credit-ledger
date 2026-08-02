@@ -226,7 +226,7 @@ function RateDistribution({ agents, loans }: { agents: Agent[]; loans: Loan[] })
           <thead>
             <tr className="text-left text-[10px] tracking-[0.16em] text-muted-foreground uppercase">
               <th className="pb-2 font-medium">Agent</th>
-              <th className="pb-2 text-right font-medium">Score</th>
+              <th className="pb-2 pr-6 text-right font-medium">Score</th>
               <th className="pb-2 font-medium">Tier</th>
               <th className="pb-2 text-right font-medium">Rate</th>
               <th className="pb-2 text-right font-medium">Source</th>
@@ -236,7 +236,7 @@ function RateDistribution({ agents, loans }: { agents: Agent[]; loans: Loan[] })
             {rows.map((r) => (
               <tr key={r.name} className="border-t border-border/50">
                 <td className="py-2 font-medium">{r.name}</td>
-                <td className={`num py-2 text-right ${scoreColor(r.score)}`}>{r.score}</td>
+                <td className={`num py-2 pr-6 text-right ${scoreColor(r.score)}`}>{r.score}</td>
                 <td className="py-2 text-muted-foreground">{r.tier}</td>
                 <td className="num py-2 text-right">{r.rate.toFixed(2)}%</td>
                 <td className="num py-2 text-right text-[11px] text-muted-foreground">
