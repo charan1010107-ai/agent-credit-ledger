@@ -2,15 +2,28 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowUpRight, Wallet, TrendingUp, Layers, Gauge } from "lucide-react";
 import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
   fetchAgents,
   fetchLoans,
   money,
+  rateForScore,
   scoreBand,
   scoreColor,
   shortHash,
   statusTone,
   type Agent,
+  type Loan,
 } from "@/lib/agentline";
+import { stageMeta } from "@/lib/risk";
 import { Panel, Sparkline, StatusPill } from "@/components/ui-kit";
 
 export const Route = createFileRoute("/")({
@@ -62,8 +75,10 @@ function Metric({
   );
 }
 
-function AgentCard({ agent }: { agent: Agent }) {
+function AgentCard({ agent, activeRate }: { agent: Agent; activeRate?: number | undefined }) {
   const tone = statusTone(agent.status);
+  const stage = stageMeta(agent.risk_stage);
+  const priced = rateForScore(agent.credit_score);
   return (
     <Link
       to="/agents/$agentId"
@@ -77,7 +92,10 @@ function AgentCard({ agent }: { agent: Agent }) {
             {agent.principals?.name} · {agent.principals?.jurisdiction}
           </p>
         </div>
-        <StatusPill label={tone.label} className={tone.className} />
+        <div className="flex flex-col items-end gap-1.5">
+          <StatusPill label={stage.label} className={stage.className} />
+          <StatusPill label={tone.label} className={tone.className} />
+        </div>
       </div>
 
       <div className="mt-5 flex items-end justify-between">
@@ -110,6 +128,20 @@ function AgentCard({ agent }: { agent: Agent }) {
           </div>
           <div className="num mt-0.5 text-sm">₹{money(agent.wallet_balance)}</div>
         </div>
+        <div>
+          <div className="text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
+            {activeRate != null ? "Active loan rate" : "Indicative rate"}
+          </div>
+          <div className={`num mt-0.5 text-sm ${priced.tier.tone}`}>
+            {(activeRate ?? priced.rate).toFixed(2)}%
+          </div>
+        </div>
+        <div>
+          <div className="text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
+            Pricing tier
+          </div>
+          <div className={`mt-0.5 text-[11px] ${priced.tier.tone}`}>{priced.tier.label}</div>
+        </div>
       </div>
 
       <div className="mt-3 flex items-center justify-between">
@@ -121,12 +153,101 @@ function AgentCard({ agent }: { agent: Agent }) {
         </span>
       </div>
 
-      {agent.anomaly && (
-        <p className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 px-2.5 py-1.5 text-[11px] text-destructive">
-          Anomaly detected — see Risk console
+      {agent.risk_stage !== "healthy" && (
+        <p className={`mt-3 rounded-md border px-2.5 py-1.5 text-[11px] ${stage.className}`}>
+          {agent.risk_reason ?? stage.blurb}
         </p>
       )}
     </Link>
+  );
+}
+
+function RateDistribution({ agents, loans }: { agents: Agent[]; loans: Loan[] }) {
+  const rows = agents.map((a) => {
+    const active = loans.find(
+      (l) => l.agent_id === a.id && ["active", "repaying"].includes(l.status),
+    );
+    const priced = rateForScore(a.credit_score);
+    return {
+      name: a.name,
+      score: a.credit_score,
+      tier: priced.tier.label,
+      rate: active ? Number(active.interest_rate) : priced.rate,
+      live: Boolean(active),
+      color:
+        a.credit_score >= 750
+          ? "var(--success)"
+          : a.credit_score >= 650
+            ? "var(--cyan)"
+            : a.credit_score >= 550
+              ? "var(--warning)"
+              : "var(--destructive)",
+    };
+  });
+
+  return (
+    <Panel
+      className="mt-6"
+      title="Cost of capital by credit score"
+      subtitle="Better-behaved agents pay less — rate is derived from the score, not negotiated."
+    >
+      <div className="h-56">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={rows} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+            <CartesianGrid stroke="var(--grid)" vertical={false} />
+            <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={11} />
+            <YAxis
+              stroke="var(--muted-foreground)"
+              fontSize={11}
+              unit="%"
+              domain={[0, 30]}
+            />
+            <Tooltip
+              cursor={{ fill: "var(--secondary)" }}
+              contentStyle={{
+                background: "oklch(0.19 0.033 266)",
+                border: "1px solid oklch(0.32 0.04 266)",
+                borderRadius: 8,
+                fontSize: 12,
+                fontFamily: "var(--font-mono)",
+              }}
+              formatter={(v: number) => [`${Number(v).toFixed(2)}%`, "Interest rate"]}
+            />
+            <Bar dataKey="rate" radius={[3, 3, 0, 0]}>
+              {rows.map((r) => (
+                <Cell key={r.name} fill={r.color} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="mt-3 overflow-x-auto">
+        <table className="w-full min-w-[520px] text-sm">
+          <thead>
+            <tr className="text-left text-[10px] tracking-[0.16em] text-muted-foreground uppercase">
+              <th className="pb-2 font-medium">Agent</th>
+              <th className="pb-2 pr-6 text-right font-medium">Score</th>
+              <th className="pb-2 font-medium">Tier</th>
+              <th className="pb-2 text-right font-medium">Rate</th>
+              <th className="pb-2 text-right font-medium">Source</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.name} className="border-t border-border/50">
+                <td className="py-2 font-medium">{r.name}</td>
+                <td className={`num py-2 pr-6 text-right ${scoreColor(r.score)}`}>{r.score}</td>
+                <td className="py-2 text-muted-foreground">{r.tier}</td>
+                <td className="num py-2 text-right">{r.rate.toFixed(2)}%</td>
+                <td className="num py-2 text-right text-[11px] text-muted-foreground">
+                  {r.live ? "active loan" : "indicative"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Panel>
   );
 }
 
@@ -196,9 +317,25 @@ function Dashboard() {
               <div key={i} className="glass h-56 animate-pulse rounded-xl" />
             ))}
           {list.map((a) => (
-            <AgentCard key={a.id} agent={a} />
+            <AgentCard
+              key={a.id}
+              agent={a}
+              activeRate={
+                loanList.find(
+                  (l) => l.agent_id === a.id && ["active", "repaying"].includes(l.status),
+                )
+                  ? Number(
+                      loanList.find(
+                        (l) => l.agent_id === a.id && ["active", "repaying"].includes(l.status),
+                      )!.interest_rate,
+                    )
+                  : undefined
+              }
+            />
           ))}
         </div>
+
+        <RateDistribution agents={list} loans={loanList} />
 
         <Panel className="mt-6" title="Loan book">
           <div className="overflow-x-auto">

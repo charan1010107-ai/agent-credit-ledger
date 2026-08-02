@@ -17,10 +17,12 @@ import {
   fetchLoans,
   fetchScoreHistory,
   money,
+  rateForScore,
   scoreBand,
   scoreColor,
   statusTone,
 } from "@/lib/agentline";
+import { stageMeta } from "@/lib/risk";
 import { Field, Panel, StatusPill } from "@/components/ui-kit";
 
 export const Route = createFileRoute("/agents/$agentId")({
@@ -77,6 +79,9 @@ function PassportPage() {
     score: p.score,
   }));
   const agentLoans = (loans.data ?? []).filter((l) => l.agent_id === agentId);
+  const activeLoan = agentLoans.find((l) => ["active", "repaying"].includes(l.status));
+  const priced = rateForScore(a.credit_score);
+  const stage = stageMeta(a.risk_stage);
 
   return (
     <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6">
@@ -93,7 +98,17 @@ function PassportPage() {
           <p className="mt-1 text-sm text-muted-foreground">{a.task_scope}</p>
         </div>
         <div className="flex items-center gap-4">
+          <StatusPill label={stage.label} className={stage.className} />
           <StatusPill label={tone.label} className={tone.className} />
+          <div className="rounded-lg border border-border/60 bg-secondary/30 px-3 py-2 text-right">
+            <div className="text-[10px] tracking-[0.16em] text-muted-foreground uppercase">
+              {activeLoan ? "Active loan rate" : "Indicative rate"}
+            </div>
+            <div className={`num text-2xl font-semibold ${priced.tier.tone}`}>
+              {(activeLoan ? Number(activeLoan.interest_rate) : priced.rate).toFixed(2)}%
+            </div>
+            <div className="text-[10px] text-muted-foreground">{priced.tier.label}</div>
+          </div>
           <div className="text-right">
             <div className={`num text-4xl font-semibold live-glow ${scoreColor(a.credit_score)}`}>
               {a.credit_score}
@@ -131,6 +146,17 @@ function PassportPage() {
             <Field label="Declared task scope" value={a.task_scope} />
             <Field label="Spend cap / cycle" value={`₹${money(a.spend_cap)}`} mono />
             <Field label="Credit limit" value={`₹${money(a.credit_limit)}`} mono />
+            <Field
+              label="Risk stage"
+              value={
+                <span className="flex flex-col gap-1">
+                  <StatusPill label={stage.label} className={stage.className} />
+                  <span className="text-[11px] text-muted-foreground">
+                    {a.risk_reason ?? stage.blurb}
+                  </span>
+                </span>
+              }
+            />
             <Field
               label="Vendor whitelist"
               value={

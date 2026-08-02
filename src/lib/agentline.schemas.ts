@@ -10,4 +10,9 @@ export const disburseSchema = z.object({
 
 export const agentIdSchema = z.object({ agentId: z.string().uuid() });
 
+export const escalateSchema = z.object({
+  agentId: z.string().uuid(),
+  reason: z.string().trim().max(240).optional(),
+});
+
 export const settleSchema = z.object({ loanId: z.string().uuid() });

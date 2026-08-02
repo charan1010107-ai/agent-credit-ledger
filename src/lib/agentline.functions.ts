@@ -1,5 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
-import { agentIdSchema, disburseSchema, settleSchema } from "./agentline.schemas";
+import {
+  agentIdSchema,
+  disburseSchema,
+  escalateSchema,
+  settleSchema,
+} from "./agentline.schemas";
 
 export const disburseLoanFn = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => disburseSchema.parse(data))
@@ -20,6 +25,20 @@ export const unfreezeAgentFn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { unfreezeAgent } = await import("./agentline.server");
     return unfreezeAgent(data.agentId);
+  });
+
+export const escalateRiskFn = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => escalateSchema.parse(data))
+  .handler(async ({ data }) => {
+    const { escalateRisk } = await import("./agentline.server");
+    return escalateRisk(data.agentId, data.reason);
+  });
+
+export const deescalateRiskFn = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => agentIdSchema.parse(data))
+  .handler(async ({ data }) => {
+    const { deescalateRisk } = await import("./agentline.server");
+    return deescalateRisk(data.agentId);
   });
 
 export const settleLoanFn = createServerFn({ method: "POST" })

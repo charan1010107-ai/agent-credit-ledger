@@ -36,6 +36,11 @@ export type Agent = {
   score_factors: ScoreFactor[];
   recent_task_revenue: number[];
   spend_velocity: number[];
+  risk_stage: string;
+  risk_reason: string | null;
+  risk_stage_at: string | null;
+  risk_signals: number;
+  baseline_credit_limit: number | null;
   created_at: string;
   principals?: Principal | null;
 };
@@ -124,7 +129,8 @@ export async function fetchScoreHistory(agentId: string): Promise<ScorePoint[]> 
 
 /* ---------- domain helpers ---------- */
 
-export { txHash, underwrite } from "./underwriting";
+export { txHash, underwrite, rateForScore, RATE_TIERS } from "./underwriting";
+export type { RateTier } from "./underwriting";
 
 
 

@@ -3,6 +3,7 @@
 // from the browser. The public Data API is read-only.
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { txHash, underwrite, type ScoreFactor } from "./underwriting";
+import { nextStage, stageMeta, type RiskStage } from "./risk";
 
 type AgentRow = {
   id: string;
@@ -13,12 +14,17 @@ type AgentRow = {
   wallet_balance: number;
   vendor_whitelist: string[];
   score_factors: ScoreFactor[];
+  risk_stage: string;
+  risk_signals: number;
+  baseline_credit_limit: number | null;
 };
 
 async function loadAgent(agentId: string): Promise<AgentRow> {
   const { data, error } = await supabaseAdmin
     .from("agents")
-    .select("id, name, status, credit_limit, credit_score, wallet_balance, vendor_whitelist, score_factors")
+    .select(
+      "id, name, status, credit_limit, credit_score, wallet_balance, vendor_whitelist, score_factors, risk_stage, risk_signals, baseline_credit_limit",
+    )
     .eq("id", agentId)
     .maybeSingle();
   if (error) throw new Error("Unable to load agent");
@@ -90,7 +96,7 @@ export async function disburseLoan(input: {
 export async function freezeAgent(agentId: string) {
   const { data: agent, error: loadError } = await supabaseAdmin
     .from("agents")
-    .select("id, name, anomaly_reason")
+    .select("id, name, anomaly_reason, risk_stage")
     .eq("id", agentId)
     .maybeSingle();
   if (loadError) throw new Error("Unable to load agent");
@@ -106,6 +112,11 @@ export async function freezeAgent(agentId: string) {
       wallet_balance: 0,
       frozen_at: new Date().toISOString(),
       freeze_reason: reason,
+      risk_stage: "frozen",
+      risk_reason: reason,
+      risk_stage_at: new Date().toISOString(),
+      risk_signals: 3,
+      anomaly: true,
     })
     .eq("id", agent.id);
   if (error) throw new Error("Unable to freeze agent");
@@ -132,7 +143,7 @@ export async function freezeAgent(agentId: string) {
 export async function unfreezeAgent(agentId: string) {
   const { data: agent, error: loadError } = await supabaseAdmin
     .from("agents")
-    .select("id, name")
+    .select("id, name, baseline_credit_limit")
     .eq("id", agentId)
     .maybeSingle();
   if (loadError) throw new Error("Unable to load agent");
@@ -140,7 +151,20 @@ export async function unfreezeAgent(agentId: string) {
 
   const { error } = await supabaseAdmin
     .from("agents")
-    .update({ status: "none", frozen_at: null, freeze_reason: null })
+    .update({
+      status: "none",
+      frozen_at: null,
+      freeze_reason: null,
+      risk_stage: "healthy",
+      risk_reason: null,
+      risk_stage_at: new Date().toISOString(),
+      risk_signals: 0,
+      anomaly: false,
+      anomaly_reason: null,
+      ...(agent.baseline_credit_limit != null
+        ? { credit_limit: Number(agent.baseline_credit_limit) }
+        : {}),
+    })
     .eq("id", agent.id);
   if (error) throw new Error("Unable to reinstate agent");
 
@@ -226,5 +250,108 @@ export async function settleLoan(loanId: string) {
 
   await supabaseAdmin.from("score_history").insert({ agent_id: agent.id, score: newScore });
 
-  return { agentName: agent.name, revenue, repayment, surplus, before, after };
+  return {
+    agentName: agent.name,
+    rate: Number(loan.interest_rate),
+    revenue,
+    repayment,
+    interest: repayment - Number(loan.amount),
+    principal: Number(loan.amount),
+    surplus,
+    before,
+    after,
+  };
+}
+
+
+/**
+ * Graduated risk response. Each call moves the agent one stage along
+ * healthy → warning → throttled → frozen and logs the transition.
+ */
+export async function escalateRisk(agentId: string, reasonInput?: string) {
+  const agent = await loadAgent(agentId);
+  const from = (agent.risk_stage ?? "healthy") as RiskStage;
+  if (from === "frozen") throw new Error("Agent is already frozen");
+
+  const to = nextStage(from);
+  if (to === "frozen") {
+    const res = await freezeAgent(agentId);
+    return { name: res.name, from, to, reason: "Access revoked after continued anomalies" };
+  }
+
+  const baseline = Number(agent.baseline_credit_limit ?? agent.credit_limit);
+  const reason =
+    reasonInput?.trim() ||
+    (to === "warning"
+      ? "Minor anomaly — failed task / spend spike above baseline"
+      : "Anomaly persisted — spend velocity crossed the throttle threshold");
+
+  const newLimit = to === "throttled" ? Math.round(baseline * 0.5) : Number(agent.credit_limit);
+  const now = new Date().toISOString();
+
+  const { error } = await supabaseAdmin
+    .from("agents")
+    .update({
+      risk_stage: to,
+      risk_reason: reason,
+      risk_stage_at: now,
+      risk_signals: Number(agent.risk_signals ?? 0) + 1,
+      anomaly: true,
+      anomaly_reason: reason,
+      baseline_credit_limit: baseline,
+      credit_limit: newLimit,
+    })
+    .eq("id", agent.id);
+  if (error) throw new Error("Unable to update risk stage");
+
+  const { error: txError } = await supabaseAdmin.from("transactions").insert({
+    agent_id: agent.id,
+    tx_hash: txHash(),
+    tx_type: to === "warning" ? "risk_warning" : "risk_throttle",
+    amount: 0,
+    status: "flagged",
+    memo:
+      to === "warning"
+        ? `WARNING RAISED — ${reason}`
+        : `THROTTLED — ${reason}. Credit limit cut to ₹${newLimit.toLocaleString("en-IN")}`,
+  });
+  if (txError) throw new Error("Unable to log risk transition");
+
+  return { name: agent.name, from, to, reason, newLimit, stage: stageMeta(to).label };
+}
+
+/** Step an agent back down one stage (operator review cleared the signal). */
+export async function deescalateRisk(agentId: string) {
+  const agent = await loadAgent(agentId);
+  const from = (agent.risk_stage ?? "healthy") as RiskStage;
+  if (from === "healthy") throw new Error("Agent is already healthy");
+  if (from === "frozen") return unfreezeAgent(agentId);
+
+  const to: RiskStage = from === "throttled" ? "warning" : "healthy";
+  const baseline = Number(agent.baseline_credit_limit ?? agent.credit_limit);
+
+  const { error } = await supabaseAdmin
+    .from("agents")
+    .update({
+      risk_stage: to,
+      risk_reason: to === "healthy" ? null : "Downgraded to warning after operator review",
+      risk_stage_at: new Date().toISOString(),
+      risk_signals: Math.max(0, Number(agent.risk_signals ?? 0) - 1),
+      anomaly: to !== "healthy",
+      anomaly_reason: to === "healthy" ? null : "Downgraded to warning after operator review",
+      credit_limit: baseline,
+    })
+    .eq("id", agent.id);
+  if (error) throw new Error("Unable to update risk stage");
+
+  await supabaseAdmin.from("transactions").insert({
+    agent_id: agent.id,
+    tx_hash: txHash(),
+    tx_type: "risk_clear",
+    amount: 0,
+    status: "confirmed",
+    memo: `Risk stage stepped down ${from} → ${to} after operator review`,
+  });
+
+  return { name: agent.name, from, to };
 }
