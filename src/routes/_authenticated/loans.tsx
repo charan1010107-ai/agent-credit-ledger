@@ -392,15 +392,17 @@ function LoanDesk() {
                   className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-semibold ${
                     decision.approved
                       ? "border-success/50 bg-success/12 text-success"
-                      : "border-destructive/50 bg-destructive/12 text-destructive"
+                      : decision.partial
+                        ? "border-warning/50 bg-warning/12 text-warning"
+                        : "border-destructive/50 bg-destructive/12 text-destructive"
                   }`}
                 >
-                  {decision.approved ? (
+                  {decision.approved || decision.partial ? (
                     <CheckCircle2 className="h-4 w-4" />
                   ) : (
                     <XCircle className="h-4 w-4" />
                   )}
-                  {decision.approved ? "APPROVED" : "DENIED"}
+                  {decision.approved ? "APPROVED" : decision.partial ? "PARTIAL" : "DENIED"}
                 </div>
               </div>
 
@@ -425,6 +427,19 @@ function LoanDesk() {
                   ))}
                 </div>
               </div>
+
+              {decision.notes && decision.notes.length > 0 && (
+                <div className="rounded-lg border border-violet/40 bg-violet/8 p-3 text-[12px] leading-relaxed text-muted-foreground">
+                  <div className="text-[10px] tracking-[0.16em] text-violet uppercase">
+                    Reasoning · first-time use case
+                  </div>
+                  <ul className="mt-1.5 space-y-1">
+                    {decision.notes.map((n) => (
+                      <li key={n}>· {n}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               <div className="rounded-lg border border-border/60 bg-secondary/25 p-4">
                 <div className="text-[10px] tracking-[0.16em] text-muted-foreground uppercase">
@@ -482,7 +497,19 @@ function LoanDesk() {
                 </div>
               </div>
 
-              {!decision.approved && (
+              {decision.partial && (
+                <div className="rounded-md border border-warning/40 bg-warning/10 p-3 text-xs text-warning">
+                  Partial approval — a score of {decision.projected} supports up to ₹
+                  {money(decision.maxAmount ?? 0)} on this request, not the ₹{money(amount)} asked
+                  for. This is a first-time use case for {agent.name}, so exposure is capped by the
+                  agent's general track record, its ₹{money(agent.credit_limit)} overall limit, and
+                  the revenue you expect to cover principal plus {decision.rate.toFixed(2)}%
+                  interest. You can draw the reduced amount now, or lower the ask / raise expected
+                  revenue and re-run.
+                </div>
+              )}
+
+              {!decision.approved && !decision.partial && (
                 <p className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
                   Denied — {agent.status === "frozen"
                     ? "agent access is frozen by the risk console."
@@ -494,7 +521,7 @@ function LoanDesk() {
                 </p>
               )}
 
-              {decision.approved && !disbursed && (
+              {(decision.approved || decision.partial) && !disbursed && (
                 <div className="rounded-lg border border-primary/40 bg-primary/8 p-4">
                   <div className="flex items-center gap-2 text-sm font-medium text-primary">
                     <Lock className="h-4 w-4" /> Scoped smart wallet
@@ -503,7 +530,10 @@ function LoanDesk() {
                     {agent.wallet_address}
                   </p>
                   <div className="mt-3 flex flex-wrap gap-1.5">
-                    {agent.vendor_whitelist.map((v) => (
+                    {(isCustom && vendorList.length > 0
+                      ? vendorList
+                      : agent.vendor_whitelist
+                    ).map((v) => (
                       <span
                         key={v}
                         className="rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary"
@@ -522,7 +552,7 @@ function LoanDesk() {
                   >
                     {disburse.isPending
                       ? "Disbursing…"
-                      : `Disburse ₹${money(amount)} to scoped wallet`}
+                      : `Disburse ₹${money(decision.partial ? (decision.maxAmount ?? amount) : amount)} to scoped wallet`}
                   </button>
                 </div>
               )}
