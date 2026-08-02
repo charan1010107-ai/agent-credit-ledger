@@ -75,7 +75,7 @@ function Metric({
   );
 }
 
-function AgentCard({ agent, activeRate }: { agent: Agent; activeRate?: number }) {
+function AgentCard({ agent, activeRate }: { agent: Agent; activeRate?: number | undefined }) {
   const tone = statusTone(agent.status);
   const stage = stageMeta(agent.risk_stage);
   const priced = rateForScore(agent.credit_score);
