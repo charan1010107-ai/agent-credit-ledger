@@ -211,7 +211,7 @@ export function underwriteCustom(agent: BehavioralAgent, req: CustomRequest) {
   factors.push({ label: "Unproven use-case category", value: -10 });
 
   const delta = factors.reduce((s, f) => s + f.value, 0);
-  const projected = Math.max(300, Math.min(850, Math.round(560 + delta)));
+  const projected = Math.max(300, Math.min(850, Math.round(anchorScore(agent) + delta)));
   const { tier, rate } = rateForScore(projected);
   const top = [...factors].sort((a, b) => Math.abs(b.value) - Math.abs(a.value)).slice(0, 3);
 
