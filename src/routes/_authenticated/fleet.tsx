@@ -26,7 +26,7 @@ import {
 import { stageMeta } from "@/lib/risk";
 import { Panel, Sparkline, StatusPill } from "@/components/ui-kit";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/fleet")({
   head: () => ({
     meta: [
       { title: "AgentLine — Credit Protocol Control Room for AI Agents" },

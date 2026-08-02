@@ -9,103 +9,97 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
-import { Route as EscrowRouteImport } from './routes/escrow'
-import { Route as LoansRouteImport } from './routes/loans'
-import { Route as RiskRouteImport } from './routes/risk'
-import { Route as AgentsAgentIdRouteImport } from './routes/agents.$agentId'
+import { Route as AuthenticatedEscrowRouteImport } from './routes/_authenticated/escrow'
+import { Route as AuthenticatedFleetRouteImport } from './routes/_authenticated/fleet'
+import { Route as AuthenticatedLoansRouteImport } from './routes/_authenticated/loans'
+import { Route as AuthenticatedRiskRouteImport } from './routes/_authenticated/risk'
+import { Route as AuthenticatedAgentsAgentIdRouteImport } from './routes/_authenticated/agents.$agentId'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
-const EscrowRoute = EscrowRouteImport.update({
-  id: '/escrow',
+const AuthenticatedEscrowRoute = AuthenticatedEscrowRouteImport.update({
+  id: '/_authenticated/escrow',
   path: '/escrow',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LoansRoute = LoansRouteImport.update({
-  id: '/loans',
+const AuthenticatedFleetRoute = AuthenticatedFleetRouteImport.update({
+  id: '/_authenticated/fleet',
+  path: '/fleet',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedLoansRoute = AuthenticatedLoansRouteImport.update({
+  id: '/_authenticated/loans',
   path: '/loans',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RiskRoute = RiskRouteImport.update({
-  id: '/risk',
+const AuthenticatedRiskRoute = AuthenticatedRiskRouteImport.update({
+  id: '/_authenticated/risk',
   path: '/risk',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AgentsAgentIdRoute = AgentsAgentIdRouteImport.update({
-  id: '/agents/$agentId',
-  path: '/agents/$agentId',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const AuthenticatedAgentsAgentIdRoute =
+  AuthenticatedAgentsAgentIdRouteImport.update({
+    id: '/_authenticated/agents/$agentId',
+    path: '/agents/$agentId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/escrow': typeof EscrowRoute
-  '/loans': typeof LoansRoute
-  '/risk': typeof RiskRoute
-  '/agents/$agentId': typeof AgentsAgentIdRoute
+  '/escrow': typeof AuthenticatedEscrowRoute
+  '/fleet': typeof AuthenticatedFleetRoute
+  '/loans': typeof AuthenticatedLoansRoute
+  '/risk': typeof AuthenticatedRiskRoute
+  '/agents/$agentId': typeof AuthenticatedAgentsAgentIdRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/escrow': typeof EscrowRoute
-  '/loans': typeof LoansRoute
-  '/risk': typeof RiskRoute
-  '/agents/$agentId': typeof AgentsAgentIdRoute
+  '/escrow': typeof AuthenticatedEscrowRoute
+  '/fleet': typeof AuthenticatedFleetRoute
+  '/loans': typeof AuthenticatedLoansRoute
+  '/risk': typeof AuthenticatedRiskRoute
+  '/agents/$agentId': typeof AuthenticatedAgentsAgentIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/escrow': typeof EscrowRoute
-  '/loans': typeof LoansRoute
-  '/risk': typeof RiskRoute
-  '/agents/$agentId': typeof AgentsAgentIdRoute
+  '/_authenticated/escrow': typeof AuthenticatedEscrowRoute
+  '/_authenticated/fleet': typeof AuthenticatedFleetRoute
+  '/_authenticated/loans': typeof AuthenticatedLoansRoute
+  '/_authenticated/risk': typeof AuthenticatedRiskRoute
+  '/_authenticated/agents/$agentId': typeof AuthenticatedAgentsAgentIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/about' | '/escrow' | '/loans' | '/risk' | '/agents/$agentId'
+    '/about' | '/escrow' | '/fleet' | '/loans' | '/risk' | '/agents/$agentId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/escrow' | '/loans' | '/risk' | '/agents/$agentId'
+  to: '/about' | '/escrow' | '/fleet' | '/loans' | '/risk' | '/agents/$agentId'
   id:
     | '__root__'
-    | '/'
     | '/about'
-    | '/escrow'
-    | '/loans'
-    | '/risk'
-    | '/agents/$agentId'
+    | '/_authenticated/escrow'
+    | '/_authenticated/fleet'
+    | '/_authenticated/loans'
+    | '/_authenticated/risk'
+    | '/_authenticated/agents/$agentId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
-  EscrowRoute: typeof EscrowRoute
-  LoansRoute: typeof LoansRoute
-  RiskRoute: typeof RiskRoute
-  AgentsAgentIdRoute: typeof AgentsAgentIdRoute
+  AuthenticatedEscrowRoute: typeof AuthenticatedEscrowRoute
+  AuthenticatedFleetRoute: typeof AuthenticatedFleetRoute
+  AuthenticatedLoansRoute: typeof AuthenticatedLoansRoute
+  AuthenticatedRiskRoute: typeof AuthenticatedRiskRoute
+  AuthenticatedAgentsAgentIdRoute: typeof AuthenticatedAgentsAgentIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -113,44 +107,51 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/escrow': {
-      id: '/escrow'
+    '/_authenticated/escrow': {
+      id: '/_authenticated/escrow'
       path: '/escrow'
       fullPath: '/escrow'
-      preLoaderRoute: typeof EscrowRouteImport
+      preLoaderRoute: typeof AuthenticatedEscrowRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/loans': {
-      id: '/loans'
+    '/_authenticated/fleet': {
+      id: '/_authenticated/fleet'
+      path: '/fleet'
+      fullPath: '/fleet'
+      preLoaderRoute: typeof AuthenticatedFleetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/loans': {
+      id: '/_authenticated/loans'
       path: '/loans'
       fullPath: '/loans'
-      preLoaderRoute: typeof LoansRouteImport
+      preLoaderRoute: typeof AuthenticatedLoansRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/risk': {
-      id: '/risk'
+    '/_authenticated/risk': {
+      id: '/_authenticated/risk'
       path: '/risk'
       fullPath: '/risk'
-      preLoaderRoute: typeof RiskRouteImport
+      preLoaderRoute: typeof AuthenticatedRiskRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/agents/$agentId': {
-      id: '/agents/$agentId'
+    '/_authenticated/agents/$agentId': {
+      id: '/_authenticated/agents/$agentId'
       path: '/agents/$agentId'
       fullPath: '/agents/$agentId'
-      preLoaderRoute: typeof AgentsAgentIdRouteImport
+      preLoaderRoute: typeof AuthenticatedAgentsAgentIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
-  EscrowRoute: EscrowRoute,
-  LoansRoute: LoansRoute,
-  RiskRoute: RiskRoute,
-  AgentsAgentIdRoute: AgentsAgentIdRoute,
+  AuthenticatedEscrowRoute: AuthenticatedEscrowRoute,
+  AuthenticatedFleetRoute: AuthenticatedFleetRoute,
+  AuthenticatedLoansRoute: AuthenticatedLoansRoute,
+  AuthenticatedRiskRoute: AuthenticatedRiskRoute,
+  AuthenticatedAgentsAgentIdRoute: AuthenticatedAgentsAgentIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

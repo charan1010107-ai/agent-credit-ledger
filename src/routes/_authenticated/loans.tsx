@@ -16,7 +16,7 @@ import {
 import { Panel } from "@/components/ui-kit";
 
 
-export const Route = createFileRoute("/loans")({
+export const Route = createFileRoute("/_authenticated/loans")({
   head: () => ({
     meta: [
       { title: "Loan Desk — Live Agent Underwriting | AgentLine" },

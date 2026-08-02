@@ -20,7 +20,7 @@ import {
 import { stageActionLabel, stageMeta } from "@/lib/risk";
 import { Panel, StatusPill } from "@/components/ui-kit";
 
-export const Route = createFileRoute("/risk")({
+export const Route = createFileRoute("/_authenticated/risk")({
   head: () => ({
     meta: [
       { title: "Risk Console & Graduated Response — AgentLine" },
