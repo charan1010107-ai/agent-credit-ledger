@@ -27,6 +27,22 @@ export const createAgentSchema = z.object({
       revenueConsistency: z.number().min(0).max(100),
     })
     .optional(),
+  /** Raw parsed rows from the uploaded CSV, replayed into the agent's ledger. */
+  taskRows: z
+    .array(
+      z.object({
+        task_date: z.string().max(40),
+        task_type: z.string().max(80),
+        task_description: z.string().max(300),
+        outcome: z.string().max(40),
+        duration_minutes: z.number().min(0).max(100000),
+        cost_incurred: z.number().min(0),
+        revenue_generated: z.number().min(0),
+        vendor_used: z.string().max(80),
+      }),
+    )
+    .max(200)
+    .optional(),
 });
 
 export type CreateAgentInput = z.infer<typeof createAgentSchema>;

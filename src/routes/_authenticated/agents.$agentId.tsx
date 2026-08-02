@@ -14,7 +14,7 @@ import {
 } from "recharts";
 import {
   fetchAgent,
-  fetchLoans,
+  fetchLoansForAgent,
   fetchScoreHistory,
   money,
   rateForScore,
@@ -60,7 +60,10 @@ function PassportPage() {
     queryKey: ["score-history", agentId],
     queryFn: () => fetchScoreHistory(agentId),
   });
-  const loans = useQuery({ queryKey: ["loans"], queryFn: fetchLoans });
+  const loans = useQuery({
+    queryKey: ["loans", agentId],
+    queryFn: () => fetchLoansForAgent(agentId),
+  });
 
   const a = agent.data;
   if (!a) {

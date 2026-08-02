@@ -54,6 +54,13 @@ export async function createOwnedAgent(userId: string, input: CreateAgentInput) 
       ? input.vendorWhitelist
       : p.useCase.vendors;
   const stats = input.derivedStats;
+  const rows = input.taskRows ?? [];
+  const chrono = [...rows].sort(
+    (a, b) => (Date.parse(a.task_date) || 0) - (Date.parse(b.task_date) || 0),
+  );
+  const recentRevenue = chrono.slice(-12).map((r) => Math.round(r.revenue_generated));
+  const spendVelocity = chrono.slice(-12).map((r) => Math.round(r.cost_incurred));
+  const netEarned = chrono.reduce((s, r) => s + r.revenue_generated - r.cost_incurred, 0);
 
   const { data: agent, error } = await supabaseAdmin
     .from("agents")
@@ -68,15 +75,15 @@ export async function createOwnedAgent(userId: string, input: CreateAgentInput) 
       status: "none",
       task_scope: starterTask,
       spend_cap: p.spendCap,
-      wallet_balance: 0,
+      wallet_balance: Math.max(0, Math.round(netEarned)),
       task_success_rate: stats ? Math.round(stats.successRate) : p.successRate,
       avg_completion_minutes: p.completionMinutes,
       spend_consistency: stats ? Math.round(stats.revenueConsistency) : p.spendConsistency,
       anomaly: false,
       vendor_whitelist: vendors,
       score_factors: p.factors,
-      recent_task_revenue: [],
-      spend_velocity: [],
+      recent_task_revenue: recentRevenue,
+      spend_velocity: spendVelocity,
       risk_stage: "healthy",
       risk_signals: 0,
     })
@@ -99,6 +106,51 @@ export async function createOwnedAgent(userId: string, input: CreateAgentInput) 
         : ""),
   });
 
+
+  if (chrono.length > 0) {
+    const ledger = chrono.flatMap((r) => {
+      const succeeded = r.outcome.toLowerCase().startsWith("succ");
+      const base = {
+        agent_id: agent.id as string,
+        status: "confirmed",
+        created_at: new Date(Date.parse(r.task_date) || Date.now()).toISOString(),
+      };
+      const entries: {
+        agent_id: string;
+        status: string;
+        created_at: string;
+        tx_hash: string;
+        tx_type: string;
+        amount: number;
+        memo: string;
+      }[] = [
+        {
+          ...base,
+          tx_hash: txHash(),
+          tx_type: succeeded ? "task_completed" : "task_failed",
+          amount: Math.round(r.revenue_generated),
+          memo:
+            `${r.task_type} · ${r.task_description}`.slice(0, 220) +
+            ` — ${r.duration_minutes}m` +
+            (r.vendor_used ? ` via ${r.vendor_used}` : ""),
+        },
+      ];
+      if (r.cost_incurred > 0) {
+        entries.push({
+          ...base,
+          tx_hash: txHash(),
+          tx_type: "vendor_spend",
+          amount: Math.round(r.cost_incurred),
+          memo: `Vendor spend${r.vendor_used ? ` — ${r.vendor_used}` : ""} for ${r.task_description}`.slice(
+            0,
+            240,
+          ),
+        });
+      }
+      return entries;
+    });
+    await supabaseAdmin.from("transactions").insert(ledger);
+  }
 
   return { agentId: agent.id as string, score: p.score };
 }

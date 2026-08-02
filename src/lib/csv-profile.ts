@@ -53,6 +53,8 @@ export type CsvDerivation = {
   spendIntensity: number;
   starterTask: string;
   vendors: string[];
+  /** The parsed rows themselves, so the account can be seeded with real task history. */
+  rows: TaskRow[];
   stats: DerivedStats;
   notes: string[];
 };
@@ -242,6 +244,7 @@ function derive(rows: TaskRow[], truncated: boolean): CsvDerivation {
     spendIntensity,
     starterTask,
     vendors,
+    rows,
     notes,
     stats: {
       rows: rows.length,
