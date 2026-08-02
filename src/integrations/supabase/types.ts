@@ -19,6 +19,7 @@ export type Database = {
           anomaly: boolean
           anomaly_reason: string | null
           avg_completion_minutes: number
+          baseline_credit_limit: number | null
           created_at: string
           credit_limit: number
           credit_score: number
@@ -28,6 +29,10 @@ export type Database = {
           name: string
           principal_id: string
           recent_task_revenue: Json
+          risk_reason: string | null
+          risk_signals: number
+          risk_stage: string
+          risk_stage_at: string | null
           score_factors: Json
           spend_cap: number
           spend_consistency: number
@@ -43,6 +48,7 @@ export type Database = {
           anomaly?: boolean
           anomaly_reason?: string | null
           avg_completion_minutes?: number
+          baseline_credit_limit?: number | null
           created_at?: string
           credit_limit?: number
           credit_score?: number
@@ -52,6 +58,10 @@ export type Database = {
           name: string
           principal_id: string
           recent_task_revenue?: Json
+          risk_reason?: string | null
+          risk_signals?: number
+          risk_stage?: string
+          risk_stage_at?: string | null
           score_factors?: Json
           spend_cap?: number
           spend_consistency?: number
@@ -67,6 +77,7 @@ export type Database = {
           anomaly?: boolean
           anomaly_reason?: string | null
           avg_completion_minutes?: number
+          baseline_credit_limit?: number | null
           created_at?: string
           credit_limit?: number
           credit_score?: number
@@ -76,6 +87,10 @@ export type Database = {
           name?: string
           principal_id?: string
           recent_task_revenue?: Json
+          risk_reason?: string | null
+          risk_signals?: number
+          risk_stage?: string
+          risk_stage_at?: string | null
           score_factors?: Json
           spend_cap?: number
           spend_consistency?: number
