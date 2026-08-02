@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedEscrowRouteImport } from './routes/_authenticated/escrow'
 import { Route as AuthenticatedFleetRouteImport } from './routes/_authenticated/fleet'
@@ -16,6 +17,11 @@ import { Route as AuthenticatedLoansRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedRiskRouteImport } from './routes/_authenticated/risk'
 import { Route as AuthenticatedAgentsAgentIdRouteImport } from './routes/_authenticated/agents.$agentId'
 
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
@@ -49,6 +55,7 @@ const AuthenticatedAgentsAgentIdRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/escrow': typeof AuthenticatedEscrowRoute
   '/fleet': typeof AuthenticatedFleetRoute
@@ -57,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/agents/$agentId': typeof AuthenticatedAgentsAgentIdRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/escrow': typeof AuthenticatedEscrowRoute
   '/fleet': typeof AuthenticatedFleetRoute
@@ -66,6 +74,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/_authenticated/escrow': typeof AuthenticatedEscrowRoute
   '/_authenticated/fleet': typeof AuthenticatedFleetRoute
@@ -76,11 +85,25 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/about' | '/escrow' | '/fleet' | '/loans' | '/risk' | '/agents/$agentId'
+    | '/'
+    | '/about'
+    | '/escrow'
+    | '/fleet'
+    | '/loans'
+    | '/risk'
+    | '/agents/$agentId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/about' | '/escrow' | '/fleet' | '/loans' | '/risk' | '/agents/$agentId'
+  to:
+    | '/'
+    | '/about'
+    | '/escrow'
+    | '/fleet'
+    | '/loans'
+    | '/risk'
+    | '/agents/$agentId'
   id:
     | '__root__'
+    | '/'
     | '/about'
     | '/_authenticated/escrow'
     | '/_authenticated/fleet'
@@ -90,6 +113,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AuthenticatedEscrowRoute: typeof AuthenticatedEscrowRoute
   AuthenticatedFleetRoute: typeof AuthenticatedFleetRoute
@@ -100,6 +124,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -146,6 +177,7 @@ declare module '@tanstack/react-router' {
 }
 
 const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AuthenticatedEscrowRoute: AuthenticatedEscrowRoute,
   AuthenticatedFleetRoute: AuthenticatedFleetRoute,
