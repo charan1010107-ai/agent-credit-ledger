@@ -1,7 +1,5 @@
 # Agent Line Credit
 
-Build a full-stack web app called "AgentLine" — a credit protocol dashboard for autonomous AI agents. React + TypeScript frontend, Supabase backend. Dark fintech aesthetic (deep navy/black background, electric blue and violet accents, monospace for numbers/scores, glassmorphic cards).
-
 CORE CONCEPT:
 
 AI agents can't get loans because they have no legal identity or collateral. AgentLine gives them an "Agent Passport" (identity linked to their human/org principal), underwrites them using behavioral data instead of credit history, and enforces repayment by routing task revenue through escrow automatically — no signed contract needed.
