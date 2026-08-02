@@ -13,6 +13,8 @@ import {
   underwrite,
   type Agent,
 } from "@/lib/agentline";
+import { underwriteCustom } from "@/lib/underwriting";
+import { USE_CASES } from "@/lib/onboarding";
 import { Panel } from "@/components/ui-kit";
 
 
@@ -43,7 +45,12 @@ const TASK_PRESETS = [
   "Optimize 900 freight lanes for next quarter",
 ];
 
-type Decision = ReturnType<typeof underwrite>;
+type Decision = ReturnType<typeof underwrite> & {
+  partial?: boolean;
+  maxAmount?: number;
+  notes?: string[];
+  hasHistory?: boolean;
+};
 
 function LoanDesk() {
   const qc = useQueryClient();
@@ -51,7 +58,14 @@ function LoanDesk() {
   const list = agents.data ?? [];
 
   const [agentId, setAgentId] = useState("");
+  const [useCaseKey, setUseCaseKey] = useState<string>("preset:data_scraping");
+  const isCustom = useCaseKey === "custom";
   const [task, setTask] = useState(TASK_PRESETS[0]!);
+  const [customName, setCustomName] = useState("");
+  const [customTask, setCustomTask] = useState("");
+  const [customVendors, setCustomVendors] = useState("");
+  const [timeframe, setTimeframe] = useState(10);
+  const [timeframeUnit, setTimeframeUnit] = useState<"days" | "hours">("days");
   const [amount, setAmount] = useState(400000);
   const [revenue, setRevenue] = useState(560000);
   const [dueDate, setDueDate] = useState(
@@ -62,14 +76,32 @@ function LoanDesk() {
   const [disbursed, setDisbursed] = useState<{ id: string; hash: string } | null>(null);
 
   const agent: Agent | undefined = list.find((a) => a.id === agentId);
+  const timeframeDays = timeframeUnit === "days" ? timeframe : Math.max(0.1, timeframe / 24);
+  const vendorList = customVendors
+    .split(",")
+    .map((v) => v.trim())
+    .filter(Boolean)
+    .slice(0, 12);
+  const description = isCustom ? customTask.trim() : task;
+  const canScore =
+    !!agent && (!isCustom || (customName.trim().length >= 2 && description.length >= 3));
 
   const runUnderwriting = () => {
-    if (!agent) return;
+    if (!agent || !canScore) return;
     setDecision(null);
     setDisbursed(null);
     setScoring(true);
     window.setTimeout(() => {
-      setDecision(underwrite(agent, amount, revenue));
+      setDecision(
+        isCustom
+          ? underwriteCustom(agent, {
+              name: customName.trim(),
+              amount,
+              expectedRevenue: revenue,
+              timeframeDays,
+            })
+          : underwrite(agent, amount, revenue),
+      );
       setScoring(false);
     }, 1900);
   };
@@ -81,15 +113,24 @@ function LoanDesk() {
       return disburseLoanFn({
         data: {
           agentId: agent.id,
-          amount,
+          amount: decision.partial ? (decision.maxAmount ?? amount) : amount,
           expectedRevenue: revenue,
-          taskDescription: task,
+          taskDescription: description,
           dueDate,
+          ...(isCustom
+            ? {
+                custom: {
+                  name: customName.trim(),
+                  vendors: vendorList,
+                  timeframeDays,
+                },
+              }
+            : {}),
         },
       });
     },
     onSuccess: (res) => {
-      setDisbursed(res);
+      setDisbursed({ id: res.id, hash: res.hash });
       toast.success("Funds disbursed to scoped smart wallet");
       qc.invalidateQueries();
     },
@@ -132,20 +173,124 @@ function LoanDesk() {
 
             <label className="block">
               <span className="text-[10px] tracking-[0.16em] text-muted-foreground uppercase">
-                Task description
+                Use case
               </span>
               <select
-                value={task}
-                onChange={(e) => setTask(e.target.value)}
+                value={useCaseKey}
+                onChange={(e) => {
+                  setUseCaseKey(e.target.value);
+                  setDecision(null);
+                  setDisbursed(null);
+                  const uc = USE_CASES.find((u) => `preset:${u.key}` === e.target.value);
+                  if (uc) setTask(uc.starterTask);
+                }}
                 className="mt-1.5 w-full rounded-md border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary"
               >
-                {TASK_PRESETS.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
+                {USE_CASES.map((u) => (
+                  <option key={u.key} value={`preset:${u.key}`}>
+                    {u.label}
                   </option>
                 ))}
+                <option value="custom">Custom — define your own use case…</option>
               </select>
             </label>
+
+            {!isCustom ? (
+              <label className="block">
+                <span className="text-[10px] tracking-[0.16em] text-muted-foreground uppercase">
+                  Task description
+                </span>
+                <select
+                  value={task}
+                  onChange={(e) => setTask(e.target.value)}
+                  className="mt-1.5 w-full rounded-md border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary"
+                >
+                  {[...new Set([task, ...TASK_PRESETS, ...USE_CASES.map((u) => u.starterTask)])].map(
+                    (t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ),
+                  )}
+                </select>
+              </label>
+            ) : (
+              <div className="space-y-3 rounded-lg border border-violet/40 bg-violet/8 p-3">
+                <p className="text-[10px] tracking-[0.16em] text-violet uppercase">
+                  Custom use case
+                </p>
+                <label className="block">
+                  <span className="text-[10px] tracking-[0.16em] text-muted-foreground uppercase">
+                    Use case name
+                  </span>
+                  <input
+                    value={customName}
+                    maxLength={60}
+                    placeholder="Invoice Reconciliation Agent"
+                    onChange={(e) => setCustomName(e.target.value)}
+                    className="mt-1.5 w-full rounded-md border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-[10px] tracking-[0.16em] text-muted-foreground uppercase">
+                    Task description
+                  </span>
+                  <textarea
+                    value={customTask}
+                    maxLength={240}
+                    rows={2}
+                    placeholder="Reconcile 40k invoices against ledger entries and flag mismatches"
+                    onChange={(e) => setCustomTask(e.target.value)}
+                    className="mt-1.5 w-full rounded-md border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-[10px] tracking-[0.16em] text-muted-foreground uppercase">
+                    Expected vendors / spend category
+                  </span>
+                  <input
+                    value={customVendors}
+                    placeholder="OpenAI API, Stripe API"
+                    onChange={(e) => setCustomVendors(e.target.value)}
+                    className="mt-1.5 w-full rounded-md border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary"
+                  />
+                  {vendorList.length > 0 && (
+                    <span className="mt-2 flex flex-wrap gap-1.5">
+                      {vendorList.map((v) => (
+                        <span
+                          key={v}
+                          className="rounded border border-violet/40 bg-violet/10 px-1.5 py-0.5 text-[11px] text-violet"
+                        >
+                          {v}
+                        </span>
+                      ))}
+                    </span>
+                  )}
+                </label>
+                <label className="block">
+                  <span className="text-[10px] tracking-[0.16em] text-muted-foreground uppercase">
+                    Expected completion timeframe
+                  </span>
+                  <span className="mt-1.5 flex gap-2">
+                    <input
+                      type="number"
+                      min={1}
+                      value={timeframe}
+                      onChange={(e) => setTimeframe(Number(e.target.value))}
+                      className="num w-full rounded-md border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary"
+                    />
+                    <select
+                      value={timeframeUnit}
+                      onChange={(e) => setTimeframeUnit(e.target.value as "days" | "hours")}
+                      className="rounded-md border border-input bg-background/60 px-2 py-2 text-sm outline-none focus:border-primary"
+                    >
+                      <option value="days">days</option>
+                      <option value="hours">hours</option>
+                    </select>
+                  </span>
+                </label>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
@@ -189,7 +334,7 @@ function LoanDesk() {
             </label>
 
             <button
-              disabled={!agent || scoring}
+              disabled={!canScore || scoring}
               onClick={runUnderwriting}
               className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40"
             >
