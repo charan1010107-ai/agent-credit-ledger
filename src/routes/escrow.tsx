@@ -36,6 +36,9 @@ export const Route = createFileRoute("/escrow")({
 
 type Settlement = {
   agentName: string;
+  rate: number;
+  principal: number;
+  interest: number;
   revenue: number;
   repayment: number;
   surplus: number;
@@ -155,7 +158,10 @@ function EscrowPage() {
                   <div className="num mt-1 text-2xl font-semibold text-violet">
                     ₹{money(settlement.repayment)}
                   </div>
-                  <p className="mt-1 text-[11px] text-muted-foreground">Principal + interest</p>
+                  <p className="num mt-1 text-[11px] text-muted-foreground">
+                    ₹{money(settlement.principal)} principal + ₹{money(settlement.interest)}{" "}
+                    interest @ {settlement.rate.toFixed(2)}% (this agent's score-derived rate)
+                  </p>
                 </div>
                 <div
                   className="flow-in rounded-lg border border-success/40 bg-success/8 p-4"

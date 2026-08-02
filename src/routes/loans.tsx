@@ -4,7 +4,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CheckCircle2, Loader2, Lock, XCircle } from "lucide-react";
 import { disburseLoanFn } from "@/lib/agentline.functions";
-import { fetchAgents, money, scoreColor, underwrite, type Agent } from "@/lib/agentline";
+import {
+  RATE_TIERS,
+  fetchAgents,
+  money,
+  rateForScore,
+  scoreColor,
+  underwrite,
+  type Agent,
+} from "@/lib/agentline";
 import { Panel } from "@/components/ui-kit";
 
 
@@ -115,7 +123,7 @@ function LoanDesk() {
                 <option value="">Select an agent…</option>
                 {list.map((a) => (
                   <option key={a.id} value={a.id}>
-                    {a.name} — score {a.credit_score} — limit ₹{money(a.credit_limit)}
+                    {a.name} — score {a.credit_score} — {rateForScore(a.credit_score).rate.toFixed(2)}% — limit ₹{money(a.credit_limit)}
                     {a.status === "frozen" ? " (frozen)" : ""}
                   </option>
                 ))}
@@ -273,10 +281,49 @@ function LoanDesk() {
                 </div>
               </div>
 
+              <div className="rounded-lg border border-border/60 bg-secondary/25 p-4">
+                <div className="text-[10px] tracking-[0.16em] text-muted-foreground uppercase">
+                  Score-derived pricing
+                </div>
+                <div className="mt-2 space-y-1">
+                  {RATE_TIERS.map((t) => {
+                    const active = t.key === decision.tier.key;
+                    return (
+                      <div
+                        key={t.key}
+                        className={`flex items-center justify-between rounded-md border px-3 py-1.5 text-[12px] ${
+                          active
+                            ? `border-current/50 bg-current/10 ${t.tone}`
+                            : "border-border/50 text-muted-foreground"
+                        }`}
+                      >
+                        <span>
+                          {t.label} · score {t.range}
+                        </span>
+                        <span className="num">
+                          {t.rateFloor}–{t.rateCeiling}%
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="num mt-2 text-[11px] text-muted-foreground">
+                  Score {decision.projected} → {decision.tier.label} → rate{" "}
+                  <span className={decision.tier.tone}>{decision.rate.toFixed(2)}%</span>{" "}
+                  (interpolated inside the tier by score position).
+                </p>
+                {decision.projected < 550 && (
+                  <p className="mt-2 rounded-md border border-destructive/40 bg-destructive/10 p-2 text-[11px] text-destructive">
+                    High-risk band — score below 550. Pricing is punitive and this request is
+                    declined by policy.
+                  </p>
+                )}
+              </div>
+
               <div className="num grid grid-cols-3 gap-3 text-center text-sm">
                 <div className="rounded-md border border-border/60 bg-secondary/25 py-2">
                   <div className="text-[10px] text-muted-foreground">RATE</div>
-                  <div className="text-primary">{decision.rate.toFixed(2)}%</div>
+                  <div className={decision.tier.tone}>{decision.rate.toFixed(2)}%</div>
                 </div>
                 <div className="rounded-md border border-border/60 bg-secondary/25 py-2">
                   <div className="text-[10px] text-muted-foreground">COVERAGE</div>
