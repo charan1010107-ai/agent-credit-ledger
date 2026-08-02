@@ -27,15 +27,12 @@ export const Route = createFileRoute("/auth")({
 });
 
 type Mode = "signin" | "signup";
-type AccountType = "individual" | "organization";
 
 function AuthPage() {
   const navigate = useNavigate();
   const { user, ready } = useSession();
   const [mode, setMode] = useState<Mode>("signup");
-  const [accountType, setAccountType] = useState<AccountType>("individual");
   const [name, setName] = useState("");
-  const [orgName, setOrgName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -50,21 +47,20 @@ function AuthPage() {
     try {
       if (mode === "signup") {
         if (!name.trim()) throw new Error("Enter your name");
-        if (accountType === "organization" && !orgName.trim())
-          throw new Error("Enter your organization name");
         const { error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
           options: {
             emailRedirectTo: window.location.origin,
             data: {
-              account_type: accountType,
+              account_type: "individual",
               display_name: name.trim(),
-              org_name: accountType === "organization" ? orgName.trim() : null,
+              org_name: null,
             },
           },
         });
         if (error) throw error;
+
         toast.success("Account created — issuing your principal record");
       } else {
         const { error } = await supabase.auth.signInWithPassword({
