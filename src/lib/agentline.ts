@@ -78,10 +78,12 @@ export type ScorePoint = { id: string; agent_id: string; score: number; recorded
 
 const cast = <T,>(rows: unknown): T[] => (rows ?? []) as T[];
 
+/** The seeded demo fleet — agents with no owner. User-created agents never appear here. */
 export async function fetchAgents(): Promise<Agent[]> {
   const { data, error } = await supabase
     .from("agents")
     .select("*, principals(*)")
+    .is("owner_id", null)
     .order("credit_score", { ascending: false });
   if (error) throw error;
   return cast<Agent>(data);
@@ -98,19 +100,48 @@ export async function fetchAgent(id: string): Promise<Agent> {
   return data as unknown as Agent;
 }
 
+/** Loan book for the demo fleet only. */
 export async function fetchLoans(): Promise<Loan[]> {
   const { data, error } = await supabase
     .from("loans")
-    .select("*, agents(name)")
+    .select("*, agents!inner(name, owner_id)")
+    .is("agents.owner_id", null)
     .order("created_at", { ascending: false });
   if (error) throw error;
   return cast<Loan>(data);
 }
 
+/** Loans belonging to one agent — used by personal views and the passport page. */
+export async function fetchLoansForAgent(agentId: string): Promise<Loan[]> {
+  const { data, error } = await supabase
+    .from("loans")
+    .select("*, agents(name)")
+    .eq("agent_id", agentId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return cast<Loan>(data);
+}
+
+/** Ledger for the demo fleet only. */
 export async function fetchTransactions(limit = 40): Promise<Transaction[]> {
   const { data, error } = await supabase
     .from("transactions")
+    .select("*, agents!inner(name, owner_id)")
+    .is("agents.owner_id", null)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return cast<Transaction>(data);
+}
+
+export async function fetchTransactionsForAgent(
+  agentId: string,
+  limit = 60,
+): Promise<Transaction[]> {
+  const { data, error } = await supabase
+    .from("transactions")
     .select("*, agents(name)")
+    .eq("agent_id", agentId)
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) throw error;
