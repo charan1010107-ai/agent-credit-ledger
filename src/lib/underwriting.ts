@@ -6,7 +6,20 @@ export type UnderwritableAgent = {
   status: string;
   credit_limit: number;
   score_factors: ScoreFactor[];
+  /** The agent's standing score — the anchor every request is scored against. */
+  credit_score?: number;
 };
+
+/**
+ * Anchor score for a request. Uses the agent's own standing score when it has one
+ * (newly issued agents are scored at creation), falling back to the generic
+ * 560 + baseline-factors anchor for legacy rows without a stored score.
+ */
+function anchorScore(agent: UnderwritableAgent): number {
+  const stored = Number(agent.credit_score);
+  if (Number.isFinite(stored) && stored > 0) return stored;
+  return 560 + (agent.score_factors ?? []).reduce((s, f) => s + f.value, 0);
+}
 
 const HEX = "0123456789abcdef";
 
@@ -87,17 +100,22 @@ export function underwrite(agent: UnderwritableAgent, amount: number, expectedRe
   const coverage = expectedRevenue > 0 ? expectedRevenue / Math.max(amount, 1) : 0;
   const utilization = amount / Math.max(Number(agent.credit_limit), 1);
 
-  factors.push({
-    label: "Revenue coverage ratio",
-    value: Math.round(Math.min(30, (coverage - 1) * 40)),
-  });
-  factors.push({
-    label: "Requested utilization",
-    value: Math.round(-utilization * 34),
-  });
+  const requestFactors: ScoreFactor[] = [
+    {
+      label: "Revenue coverage ratio",
+      value: Math.round(Math.min(30, (coverage - 1) * 40)),
+    },
+    {
+      label: "Requested utilization",
+      value: Math.round(-utilization * 34),
+    },
+  ];
+  factors.push(...requestFactors);
 
-  const delta = factors.reduce((s, f) => s + f.value, 0);
-  const projected = Math.max(300, Math.min(850, Math.round(560 + delta)));
+  // The standing score already prices the baseline factors; only the request-specific
+  // factors move it. Anchoring on a flat 560 made freshly issued agents undecidable.
+  const delta = requestFactors.reduce((s, f) => s + f.value, 0);
+  const projected = Math.max(300, Math.min(850, Math.round(anchorScore(agent) + delta)));
   const approved =
     agent.status !== "frozen" &&
     projected >= 600 &&
@@ -193,7 +211,7 @@ export function underwriteCustom(agent: BehavioralAgent, req: CustomRequest) {
   factors.push({ label: "Unproven use-case category", value: -10 });
 
   const delta = factors.reduce((s, f) => s + f.value, 0);
-  const projected = Math.max(300, Math.min(850, Math.round(560 + delta)));
+  const projected = Math.max(300, Math.min(850, Math.round(anchorScore(agent) + delta)));
   const { tier, rate } = rateForScore(projected);
   const top = [...factors].sort((a, b) => Math.abs(b.value) - Math.abs(a.value)).slice(0, 3);
 
