@@ -27,6 +27,7 @@ export type Database = {
           frozen_at: string | null
           id: string
           name: string
+          owner_id: string | null
           principal_id: string
           recent_task_revenue: Json
           risk_reason: string | null
@@ -56,6 +57,7 @@ export type Database = {
           frozen_at?: string | null
           id?: string
           name: string
+          owner_id?: string | null
           principal_id: string
           recent_task_revenue?: Json
           risk_reason?: string | null
@@ -85,6 +87,7 @@ export type Database = {
           frozen_at?: string | null
           id?: string
           name?: string
+          owner_id?: string | null
           principal_id?: string
           recent_task_revenue?: Json
           risk_reason?: string | null
@@ -197,6 +200,44 @@ export type Database = {
           signed_at?: string
         }
         Relationships: []
+      }
+      profiles: {
+        Row: {
+          account_type: string
+          created_at: string
+          display_name: string
+          id: string
+          org_name: string | null
+          principal_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_type?: string
+          created_at?: string
+          display_name?: string
+          id: string
+          org_name?: string | null
+          principal_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_type?: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          org_name?: string | null
+          principal_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_principal_id_fkey"
+            columns: ["principal_id"]
+            isOneToOne: false
+            referencedRelation: "principals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       score_history: {
         Row: {
