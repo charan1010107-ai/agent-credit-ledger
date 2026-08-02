@@ -7,9 +7,17 @@ import {
   BadgeCheck,
   Loader2,
   ShieldAlert,
+  SlidersHorizontal,
   Sparkles,
+  Upload,
   Wallet,
 } from "lucide-react";
+import {
+  SAMPLE_CSV_HEADER,
+  parseTaskHistoryCsv,
+  type CsvDerivation,
+} from "@/lib/csv-profile";
+
 import { supabase } from "@/integrations/supabase/client";
 import { fetchMyAgent, fetchMyProfile, principalLabel, useSession } from "@/lib/account";
 import {
